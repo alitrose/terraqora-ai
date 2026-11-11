@@ -13,6 +13,11 @@ from app.schemas.auth import (
     UserRole,
 )
 from app.schemas.farm import FarmCreate, FarmOut, FarmUpdate, IrrigationType
+from app.schemas.predictions import (
+    CropYieldRequest,
+    CropYieldResponse,
+    FeatureDriverOut,
+)
 from app.schemas.profile import FarmerProfileOut, FarmerProfileUpdate, PreferredUnits
 
 __all__ = [
@@ -21,11 +26,14 @@ __all__ = [
     "AdminUserItem",
     "AdminUserUpdate",
     "AuthResponse",
+    "CropYieldRequest",
+    "CropYieldResponse",
     "FarmCreate",
     "FarmOut",
     "FarmUpdate",
     "FarmerProfileOut",
     "FarmerProfileUpdate",
+    "FeatureDriverOut",
     "IrrigationType",
     "LoginRequest",
     "PreferredUnits",

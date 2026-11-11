@@ -15,6 +15,7 @@ from app.schemas.admin import (
     AdminUserItem,
     AdminUserUpdate,
 )
+from app.services.crop_yield_service import get_crop_yield_registry_status
 
 logger = logging.getLogger("terraqora.admin")
 router = APIRouter(prefix="/admin", tags=["Administration"])
@@ -76,14 +77,7 @@ def get_admin_overview(
     total_ai_chats = db.scalar(select(func.count(ChatSession.id))) or 0
 
     models = [
-        AdminModelStatusItem(
-            module="Crop Yield Prediction",
-            algorithm="XGBoost / Random Forest (Leak-Free Pipeline)",
-            status="Phase 5 Scheduled",
-            metric_label="Chronological R²",
-            metric_value="Pending Phase 5 Training",
-            artifact_size="< 15 MB target",
-        ),
+        get_crop_yield_registry_status(),
         AdminModelStatusItem(
             module="Plant Disease Vision",
             algorithm="MobileNetV2 Transfer Learning (TensorFlow/Keras + TFLite)",
@@ -97,7 +91,7 @@ def get_admin_overview(
             algorithm="Random Forest / Light Pipeline (22 Crops)",
             status="Phase 5 Scheduled",
             metric_label="5-Fold Accuracy",
-            metric_value="Pending Phase 5 Training",
+            metric_value="Pending Phase 5b Training",
             artifact_size="< 5 MB target",
         ),
         AdminModelStatusItem(
@@ -105,7 +99,7 @@ def get_admin_overview(
             algorithm="Gradient Boosted Classifier + Agronomic Guardrails",
             status="Phase 5 Scheduled",
             metric_label="Stratified F1",
-            metric_value="Pending Phase 5 Training",
+            metric_value="Pending Phase 5b Training",
             artifact_size="< 4 MB target",
         ),
     ]

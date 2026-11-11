@@ -148,6 +148,8 @@ let demoReports: GeneratedReport[] = [
   },
 ];
 
+let demoYieldHistory: CropYieldResponse[] = [];
+
 export const demoSandbox = {
   login(email: string, roleHint?: 'farmer' | 'admin'): AuthSession {
     const isAdmin = roleHint === 'admin' || email.toLowerCase().includes('admin');
@@ -243,8 +245,9 @@ export const demoSandbox = {
     const predicted = Number((base * rainFactor * fertFactor).toFixed(2));
     const total = Number((predicted * req.area_hectares).toFixed(2));
 
-    return {
+    const predictedEntry: CropYieldResponse = {
       id: makeId('yield'),
+      farm_id: req.farm_id ?? null,
       crop: req.crop,
       state: req.state,
       season: req.season,
@@ -254,19 +257,25 @@ export const demoSandbox = {
       yield_unit: isCoconut ? 'nuts/hectare' : 'tonnes/hectare',
       estimated_total_production: total,
       production_unit: isCoconut ? 'nuts' : 'tonnes',
-      model_name: 'Phase 3 Preview Estimator (XGBoost trained in Phase 5)',
+      model_name: 'Phase 3 Preview Estimator (Demo Sandbox Only)',
       model_version: 'preview-v0',
       feature_drivers: [
-        { feature: 'Crop Baseline & Season', impact_pct: 42, direction: 'positive' },
-        { feature: 'Annual Rainfall Adequacy', impact_pct: 26, direction: rainFactor >= 1 ? 'positive' : 'negative' },
+        { feature: 'Crop Variety', impact_pct: 42, direction: 'positive' },
+        { feature: 'Annual Rainfall (mm)', impact_pct: 26, direction: rainFactor >= 1 ? 'positive' : 'negative' },
         { feature: 'Fertilizer Intensity (kg/ha)', impact_pct: 19, direction: 'positive' },
         { feature: 'State Agro-Climatic Zone', impact_pct: 13, direction: 'neutral' },
       ],
       advisory_note:
-        'Preview estimate generated without Production leakage. Connect the Phase 5 trained XGBoost/Random Forest backend pipeline for live dataset-calibrated predictions.',
+        'Demo preview estimate generated locally in browser sandbox (no Production leakage). Sign in with a live backend account to run the trained Phase 5 Crop Yield ML pipeline.',
       created_at: new Date().toISOString(),
       source_mode: 'demo_preview',
     };
+    demoYieldHistory = [predictedEntry, ...demoYieldHistory].slice(0, 10);
+    return predictedEntry;
+  },
+
+  getYieldHistory(): CropYieldResponse[] {
+    return [...demoYieldHistory];
   },
 
   detectDisease(file: File, cropHint: string): DiseaseDetectionResponse {

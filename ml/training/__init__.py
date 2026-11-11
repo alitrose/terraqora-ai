@@ -1,0 +1,1 @@
+# TerraQora AI Training Scripts

@@ -1,0 +1,249 @@
+{
+  "dataset_path": "ml\\datasets\\raw\\crop_yield.csv",
+  "shape": {
+    "rows": 19689,
+    "columns": 10
+  },
+  "columns": {
+    "Crop": "str",
+    "Crop_Year": "int64",
+    "Season": "str",
+    "State": "str",
+    "Area": "float64",
+    "Production": "int64",
+    "Annual_Rainfall": "float64",
+    "Fertilizer": "float64",
+    "Pesticide": "float64",
+    "Yield": "float64"
+  },
+  "missing_values": {
+    "Crop": 0,
+    "Crop_Year": 0,
+    "Season": 0,
+    "State": 0,
+    "Area": 0,
+    "Production": 0,
+    "Annual_Rainfall": 0,
+    "Fertilizer": 0,
+    "Pesticide": 0,
+    "Yield": 0
+  },
+  "duplicates": {
+    "raw_exact": 0,
+    "trimmed_exact": 0,
+    "composite_crop_year_season_state": 0
+  },
+  "whitespace_anomalies": {
+    "Crop": 172,
+    "Season": 19689,
+    "State": 0
+  },
+  "cardinality_after_trim": {
+    "Crop": 55,
+    "Season": 6,
+    "State": 30,
+    "Crop_Year": 24,
+    "seasons_list": [
+      "Autumn",
+      "Kharif",
+      "Rabi",
+      "Summer",
+      "Whole Year",
+      "Winter"
+    ]
+  },
+  "target_leakage_audit": {
+    "pearson_r_production_vs_yield_all": 0.5708085998815764,
+    "pearson_r_production_vs_yield_non_coconut": 0.30004132571701514,
+    "pearson_r_prod_per_area_vs_yield_all": 0.9965177076809586,
+    "median_abs_diff_yield_vs_prod_over_area": 0.055873154169136074,
+    "p95_abs_diff_yield_vs_prod_over_area": 1.6030179174947123,
+    "max_abs_diff_yield_vs_prod_over_area": 3733.9932541860217,
+    "rows_within_1pct_of_prod_over_area": 4038,
+    "conclusion": "Production directly leaks Yield (Yield ~= Production / Area at district/state aggregate). Production MUST be excluded from inference features and training inputs."
+  },
+  "anomalies": {
+    "area_lte_zero": 0,
+    "production_lt_zero": 0,
+    "production_eq_zero": 112,
+    "yield_lt_zero": 0,
+    "yield_eq_zero": 112,
+    "rainfall_lte_zero": 0,
+    "fertilizer_eq_zero": 0,
+    "pesticide_eq_zero": 0,
+    "yield_eq_zero_and_prod_eq_zero": 108,
+    "yield_eq_zero_but_prod_gt_zero": 4
+  },
+  "yield_distribution_all": {
+    "count": 19689,
+    "min": 0.0,
+    "p25": 0.6,
+    "median": 1.03,
+    "mean": 79.9540091300867,
+    "p75": 2.388888889,
+    "p95": 21.91485714399998,
+    "max": 21105.0,
+    "std": 878.3061926565967
+  },
+  "yield_distribution_coconut": {
+    "count": 172,
+    "min": 0.0,
+    "p25": 5947.8442857499995,
+    "median": 8466.315523,
+    "mean": 8652.000198744186,
+    "p75": 11982.216875,
+    "p95": 13767.247854999998,
+    "max": 21105.0,
+    "std": 3772.524093249744
+  },
+  "yield_distribution_non_coconut": {
+    "count": 19517,
+    "min": 0.0,
+    "p25": 0.596875,
+    "median": 1.02,
+    "mean": 4.410024674810524,
+    "p75": 2.32,
+    "p95": 18.362962962000008,
+    "max": 989.87,
+    "std": 14.587785338343298
+  },
+  "year_counts_all": {
+    "1997": 410,
+    "1998": 646,
+    "1999": 650,
+    "2000": 772,
+    "2001": 750,
+    "2002": 815,
+    "2003": 801,
+    "2004": 787,
+    "2005": 811,
+    "2006": 823,
+    "2007": 828,
+    "2008": 847,
+    "2009": 865,
+    "2010": 859,
+    "2011": 907,
+    "2012": 894,
+    "2013": 976,
+    "2014": 965,
+    "2015": 998,
+    "2016": 1036,
+    "2017": 1070,
+    "2018": 1063,
+    "2019": 1079,
+    "2020": 37
+  },
+  "year_counts_non_coconut": {
+    "1997": 406,
+    "1998": 641,
+    "1999": 644,
+    "2000": 765,
+    "2001": 743,
+    "2002": 807,
+    "2003": 793,
+    "2004": 780,
+    "2005": 803,
+    "2006": 816,
+    "2007": 821,
+    "2008": 839,
+    "2009": 858,
+    "2010": 853,
+    "2011": 899,
+    "2012": 887,
+    "2013": 966,
+    "2014": 955,
+    "2015": 989,
+    "2016": 1028,
+    "2017": 1062,
+    "2018": 1055,
+    "2019": 1070,
+    "2020": 37
+  },
+  "chronological_split_preview_1997_2015_train__2016_2017_val__2018_2020_test": {
+    "train_rows": 15404,
+    "val_rows": 2106,
+    "test_rows": 2179,
+    "unseen_crops_in_val": [
+      "Other Summer Pulses"
+    ],
+    "unseen_crops_in_test": [
+      "Other Summer Pulses"
+    ],
+    "unseen_states_in_val": [],
+    "unseen_states_in_test": []
+  },
+  "top_10_crops_by_mean_yield": {
+    "Coconut": {
+      "count": 172,
+      "mean": 8652.0,
+      "median": 8466.316,
+      "max": 21105.0
+    },
+    "Sugarcane": {
+      "count": 605,
+      "mean": 51.727,
+      "median": 53.158,
+      "max": 165.0
+    },
+    "Banana": {
+      "count": 245,
+      "mean": 26.851,
+      "median": 17.949,
+      "max": 126.388
+    },
+    "Tapioca": {
+      "count": 201,
+      "mean": 16.667,
+      "median": 11.118,
+      "max": 42.098
+    },
+    "Potato": {
+      "count": 628,
+      "mean": 13.332,
+      "median": 10.175,
+      "max": 311.02
+    },
+    "Onion": {
+      "count": 454,
+      "mean": 13.248,
+      "median": 9.193,
+      "max": 381.42
+    },
+    "Sweet potato": {
+      "count": 273,
+      "mean": 9.241,
+      "median": 8.513,
+      "max": 26.339
+    },
+    "Jute": {
+      "count": 181,
+      "mean": 7.555,
+      "median": 8.146,
+      "max": 25.431
+    },
+    "Ginger": {
+      "count": 323,
+      "mean": 6.442,
+      "median": 4.888,
+      "max": 36.358
+    },
+    "Mesta": {
+      "count": 210,
+      "mean": 5.389,
+      "median": 4.935,
+      "max": 17.679
+    }
+  },
+  "lowest_count_10_crops": {
+    "Cashewnut": 134,
+    "Cowpea(Lobia)": 134,
+    "Black pepper": 126,
+    "other oilseeds": 126,
+    "Moth": 110,
+    "Khesari": 75,
+    "Cardamom": 74,
+    "Guar seed": 63,
+    "Oilseeds total": 29,
+    "Other Summer Pulses": 10
+  }
+}

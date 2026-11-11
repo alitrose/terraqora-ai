@@ -1,0 +1,552 @@
+{
+  "model_version": "phase5-v1.0.0",
+  "selected_model_key": "random_forest_segmented",
+  "selected_algorithm": "Segmented Random Forest Regressor (Non-Coconut tonnes/ha + Coconut nuts/ha)",
+  "dataset": {
+    "path": "ml\\datasets\\raw\\crop_yield.csv",
+    "sha256": "ab9bc356b1f8107d490376cec24450a0e2906322ad25788ab22fb32537ab1f8f",
+    "total_rows": 19689,
+    "dropped_leakage_columns": [
+      "Production"
+    ]
+  },
+  "split_strategy": {
+    "type": "chronological",
+    "train_years": "1997-2015",
+    "train_rows": 15404,
+    "val_years": "2016-2017",
+    "val_rows": 2106,
+    "test_years": "2018-2020",
+    "test_rows": 2179,
+    "production_refit": "Refitted locked hyperparameters on all 19,689 rows (1997-2020) after finalizing test metrics"
+  },
+  "selected_model_artifact": {
+    "path": "ml\\saved_models\\crop_yield_model.joblib",
+    "size_mb": 7.66,
+    "latency_ms": 45.773
+  },
+  "selected_test_metrics": {
+    "overall": {
+      "count": 2179,
+      "mae": 13.8004,
+      "rmse": 185.4233,
+      "r2": 0.9523
+    },
+    "non_coconut_tonnes_per_ha": {
+      "count": 2162,
+      "mae": 1.4076,
+      "rmse": 6.4679,
+      "r2": 0.7597
+    },
+    "coconut_nuts_per_ha": {
+      "count": 17,
+      "mae": 1589.8685,
+      "rmse": 2098.0034,
+      "r2": 0.7065
+    }
+  },
+  "selected_test_bootstrap_95_ci_non_coconut": {
+    "mae": {
+      "mean": 1.4132,
+      "ci_low_95": 1.1882,
+      "ci_high_95": 1.7156
+    },
+    "rmse": {
+      "mean": 6.2012,
+      "ci_low_95": 3.2177,
+      "ci_high_95": 9.9488
+    },
+    "r2": {
+      "mean": 0.7724,
+      "ci_low_95": 0.5584,
+      "ci_high_95": 0.9268
+    }
+  },
+  "error_analysis": {
+    "non_coconut_by_year": {
+      "2018": {
+        "count": 1055,
+        "mae": 1.5977,
+        "rmse": 8.6992,
+        "r2": 0.6377
+      },
+      "2019": {
+        "count": 1070,
+        "mae": 1.229,
+        "rmse": 3.0568,
+        "r2": 0.9332
+      },
+      "2020": {
+        "count": 37,
+        "mae": 1.1562,
+        "rmse": 4.0537,
+        "r2": 0.9061
+      }
+    },
+    "non_coconut_by_season": {
+      "Autumn": {
+        "count": 46,
+        "mae": 0.5125,
+        "rmse": 0.9341,
+        "r2": 0.0738
+      },
+      "Kharif": {
+        "count": 928,
+        "mae": 1.2822,
+        "rmse": 8.2473,
+        "r2": 0.5927
+      },
+      "Rabi": {
+        "count": 701,
+        "mae": 0.8347,
+        "rmse": 2.8658,
+        "r2": 0.6953
+      },
+      "Summer": {
+        "count": 163,
+        "mae": 0.7944,
+        "rmse": 1.4038,
+        "r2": 0.9503
+      },
+      "Whole Year": {
+        "count": 280,
+        "mae": 3.8591,
+        "rmse": 8.6847,
+        "r2": 0.864
+      },
+      "Winter": {
+        "count": 44,
+        "mae": 0.7879,
+        "rmse": 1.4047,
+        "r2": 0.986
+      }
+    },
+    "worst_8_crops_by_mae": {
+      "Banana": {
+        "count": 23,
+        "mean_actual": 38.931,
+        "mae": 12.122,
+        "max_error": 95.761
+      },
+      "Onion": {
+        "count": 55,
+        "mean_actual": 18.193,
+        "mae": 8.968,
+        "max_error": 233.695
+      },
+      "Sugarcane": {
+        "count": 53,
+        "mean_actual": 59.837,
+        "mae": 8.68,
+        "max_error": 37.353
+      },
+      "Tobacco": {
+        "count": 40,
+        "mean_actual": 3.339,
+        "mae": 3.491,
+        "max_error": 52.384
+      },
+      "Sweet potato": {
+        "count": 33,
+        "mean_actual": 11.405,
+        "mae": 3.484,
+        "max_error": 9.625
+      },
+      "Oilseeds total": {
+        "count": 4,
+        "mean_actual": 4.022,
+        "mae": 3.221,
+        "max_error": 7.726
+      },
+      "Ginger": {
+        "count": 35,
+        "mean_actual": 7.588,
+        "mae": 3.079,
+        "max_error": 13.274
+      },
+      "Turmeric": {
+        "count": 35,
+        "mean_actual": 5.03,
+        "mae": 2.653,
+        "max_error": 15.344
+      }
+    },
+    "zero_yield_test_rows": {
+      "count": 15,
+      "mae": 1.6229
+    },
+    "cold_start_unseen_crop_other_summer_pulses": {
+      "count": 5,
+      "mae": 0.258
+    },
+    "top_5_largest_non_coconut_residuals": [
+      {
+        "Crop": "Onion",
+        "Crop_Year": 2018,
+        "Season": "Kharif",
+        "State": "Andhra Pradesh",
+        "Area": 24750.0,
+        "actual_yield": 247.573,
+        "predicted_yield": 13.878,
+        "abs_error": 233.695
+      },
+      {
+        "Crop": "Banana",
+        "Crop_Year": 2018,
+        "Season": "Whole Year",
+        "State": "Andhra Pradesh",
+        "Area": 59098.0,
+        "actual_yield": 126.388,
+        "predicted_yield": 30.627,
+        "abs_error": 95.761
+      },
+      {
+        "Crop": "Onion",
+        "Crop_Year": 2018,
+        "Season": "Rabi",
+        "State": "Andhra Pradesh",
+        "Area": 5021.0,
+        "actual_yield": 80.268,
+        "predicted_yield": 15.048,
+        "abs_error": 65.22
+      },
+      {
+        "Crop": "Tobacco",
+        "Crop_Year": 2018,
+        "Season": "Kharif",
+        "State": "Andhra Pradesh",
+        "Area": 24635.0,
+        "actual_yield": 57.12,
+        "predicted_yield": 4.737,
+        "abs_error": 52.384
+      },
+      {
+        "Crop": "Sugarcane",
+        "Crop_Year": 2019,
+        "Season": "Whole Year",
+        "State": "Kerala",
+        "Area": 950.04,
+        "actual_yield": 83.834,
+        "predicted_yield": 46.481,
+        "abs_error": 37.353
+      }
+    ]
+  },
+  "benchmarks": {
+    "dummy_median_segmented": {
+      "train_seconds": 0.108,
+      "artifact_size_mb": 0.002,
+      "single_row_latency_ms": 6.389,
+      "validation_metrics": {
+        "overall": {
+          "count": 2106,
+          "mae": 23.4312,
+          "rmse": 267.9022,
+          "r2": 0.9016
+        },
+        "non_coconut_tonnes_per_ha": {
+          "count": 2090,
+          "mae": 3.947,
+          "rmse": 14.6281,
+          "r2": -0.0651
+        },
+        "coconut_nuts_per_ha": {
+          "count": 16,
+          "mae": 2568.5508,
+          "rmse": 3069.0361,
+          "r2": -0.2676
+        }
+      },
+      "test_metrics": {
+        "overall": {
+          "count": 2179,
+          "mae": 26.2714,
+          "rmse": 349.4595,
+          "r2": 0.8305
+        },
+        "non_coconut_tonnes_per_ha": {
+          "count": 2162,
+          "mae": 4.0318,
+          "rmse": 13.705,
+          "r2": -0.0787
+        },
+        "coconut_nuts_per_ha": {
+          "count": 17,
+          "mae": 2854.6316,
+          "rmse": 3953.3874,
+          "r2": -0.0421
+        }
+      }
+    },
+    "ridge_unified": {
+      "train_seconds": 0.07,
+      "artifact_size_mb": 0.003,
+      "single_row_latency_ms": 6.573,
+      "validation_metrics": {
+        "overall": {
+          "count": 2106,
+          "mae": 46.7056,
+          "rmse": 266.546,
+          "r2": 0.9026
+        },
+        "non_coconut_tonnes_per_ha": {
+          "count": 2090,
+          "mae": 27.8321,
+          "rmse": 47.677,
+          "r2": -10.3139
+        },
+        "coconut_nuts_per_ha": {
+          "count": 16,
+          "mae": 2512.0499,
+          "rmse": 3009.087,
+          "r2": -0.2185
+        }
+      },
+      "test_metrics": {
+        "overall": {
+          "count": 2179,
+          "mae": 51.2428,
+          "rmse": 348.0762,
+          "r2": 0.8319
+        },
+        "non_coconut_tonnes_per_ha": {
+          "count": 2162,
+          "mae": 29.7845,
+          "rmse": 48.7977,
+          "r2": -12.6759
+        },
+        "coconut_nuts_per_ha": {
+          "count": 17,
+          "mae": 2780.2287,
+          "rmse": 3902.1341,
+          "r2": -0.0152
+        }
+      }
+    },
+    "ridge_segmented": {
+      "train_seconds": 0.079,
+      "artifact_size_mb": 0.004,
+      "single_row_latency_ms": 7.512,
+      "validation_metrics": {
+        "overall": {
+          "count": 2106,
+          "mae": 11.0415,
+          "rmse": 111.3861,
+          "r2": 0.983
+        },
+        "non_coconut_tonnes_per_ha": {
+          "count": 2090,
+          "mae": 2.9747,
+          "rmse": 10.2739,
+          "r2": 0.4746
+        },
+        "coconut_nuts_per_ha": {
+          "count": 16,
+          "mae": 1064.7708,
+          "rmse": 1272.5033,
+          "r2": 0.7821
+        }
+      },
+      "test_metrics": {
+        "overall": {
+          "count": 2179,
+          "mae": 17.2561,
+          "rmse": 222.8631,
+          "r2": 0.9311
+        },
+        "non_coconut_tonnes_per_ha": {
+          "count": 2162,
+          "mae": 2.9943,
+          "rmse": 8.5135,
+          "r2": 0.5837
+        },
+        "coconut_nuts_per_ha": {
+          "count": 17,
+          "mae": 1831.0209,
+          "rmse": 2521.3187,
+          "r2": 0.5761
+        }
+      }
+    },
+    "random_forest_segmented": {
+      "train_seconds": 11.861,
+      "artifact_size_mb": 6.416,
+      "single_row_latency_ms": 45.773,
+      "validation_metrics": {
+        "overall": {
+          "count": 2106,
+          "mae": 8.5262,
+          "rmse": 113.2938,
+          "r2": 0.9824
+        },
+        "non_coconut_tonnes_per_ha": {
+          "count": 2090,
+          "mae": 1.2974,
+          "rmse": 8.6013,
+          "r2": 0.6318
+        },
+        "coconut_nuts_per_ha": {
+          "count": 16,
+          "mae": 952.7921,
+          "rmse": 1296.0732,
+          "r2": 0.7739
+        }
+      },
+      "test_metrics": {
+        "overall": {
+          "count": 2179,
+          "mae": 13.8004,
+          "rmse": 185.4233,
+          "r2": 0.9523
+        },
+        "non_coconut_tonnes_per_ha": {
+          "count": 2162,
+          "mae": 1.4076,
+          "rmse": 6.4679,
+          "r2": 0.7597
+        },
+        "coconut_nuts_per_ha": {
+          "count": 17,
+          "mae": 1589.8685,
+          "rmse": 2098.0034,
+          "r2": 0.7065
+        }
+      }
+    },
+    "xgboost_unified": {
+      "train_seconds": 2.191,
+      "artifact_size_mb": 0.415,
+      "single_row_latency_ms": 9.484,
+      "validation_metrics": {
+        "overall": {
+          "count": 2106,
+          "mae": 9.8363,
+          "rmse": 98.9233,
+          "r2": 0.9866
+        },
+        "non_coconut_tonnes_per_ha": {
+          "count": 2090,
+          "mae": 3.9305,
+          "rmse": 26.3516,
+          "r2": -2.4563
+        },
+        "coconut_nuts_per_ha": {
+          "count": 16,
+          "mae": 781.2802,
+          "rmse": 1094.2352,
+          "r2": 0.8389
+        }
+      },
+      "test_metrics": {
+        "overall": {
+          "count": 2179,
+          "mae": 12.3351,
+          "rmse": 162.4238,
+          "r2": 0.9634
+        },
+        "non_coconut_tonnes_per_ha": {
+          "count": 2162,
+          "mae": 2.27,
+          "rmse": 11.1582,
+          "r2": 0.2849
+        },
+        "coconut_nuts_per_ha": {
+          "count": 17,
+          "mae": 1292.3676,
+          "rmse": 1834.5708,
+          "r2": 0.7756
+        }
+      }
+    },
+    "xgboost_segmented_native": {
+      "train_seconds": 3.767,
+      "artifact_size_mb": 0.433,
+      "single_row_latency_ms": 11.743,
+      "validation_metrics": {
+        "overall": {
+          "count": 2106,
+          "mae": 9.0391,
+          "rmse": 115.3283,
+          "r2": 0.9818
+        },
+        "non_coconut_tonnes_per_ha": {
+          "count": 2090,
+          "mae": 1.4469,
+          "rmse": 8.6602,
+          "r2": 0.6267
+        },
+        "coconut_nuts_per_ha": {
+          "count": 16,
+          "mae": 1000.7811,
+          "rmse": 1319.4309,
+          "r2": 0.7657
+        }
+      },
+      "test_metrics": {
+        "overall": {
+          "count": 2179,
+          "mae": 13.8773,
+          "rmse": 191.0274,
+          "r2": 0.9494
+        },
+        "non_coconut_tonnes_per_ha": {
+          "count": 2162,
+          "mae": 1.554,
+          "rmse": 6.6129,
+          "r2": 0.7488
+        },
+        "coconut_nuts_per_ha": {
+          "count": 17,
+          "mae": 1581.1108,
+          "rmse": 2161.4313,
+          "r2": 0.6885
+        }
+      }
+    },
+    "xgboost_segmented_log1p": {
+      "train_seconds": 2.661,
+      "artifact_size_mb": 0.413,
+      "single_row_latency_ms": 10.092,
+      "validation_metrics": {
+        "overall": {
+          "count": 2106,
+          "mae": 10.6741,
+          "rmse": 155.1667,
+          "r2": 0.967
+        },
+        "non_coconut_tonnes_per_ha": {
+          "count": 2090,
+          "mae": 1.316,
+          "rmse": 8.7784,
+          "r2": 0.6164
+        },
+        "coconut_nuts_per_ha": {
+          "count": 16,
+          "mae": 1233.0708,
+          "rmse": 1777.3656,
+          "r2": 0.5749
+        }
+      },
+      "test_metrics": {
+        "overall": {
+          "count": 2179,
+          "mae": 17.2476,
+          "rmse": 230.4182,
+          "r2": 0.9263
+        },
+        "non_coconut_tonnes_per_ha": {
+          "count": 2162,
+          "mae": 1.5097,
+          "rmse": 6.9247,
+          "r2": 0.7246
+        },
+        "coconut_nuts_per_ha": {
+          "count": 17,
+          "mae": 2018.7332,
+          "rmse": 2607.5118,
+          "r2": 0.5467
+        }
+      }
+    }
+  }
+}

@@ -2,12 +2,16 @@ from functools import lru_cache
 import os
 from pathlib import Path
 import secrets
+import sys
 from typing import Literal
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _ROOT_ENV = _PROJECT_ROOT / ".env"
+
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(_PROJECT_ROOT))
 
 
 def _normalize_database_url(raw_url: str) -> str:

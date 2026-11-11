@@ -5,7 +5,7 @@ Authentication: `Authorization: Bearer <access_token>` (JWT).
 TypeScript types matching these contracts live in [api.ts](../frontend/src/types/api.ts), PostgreSQL DDL lives in [schema.sql](../database/schema.sql), and Phase 4 FastAPI routes live in [backend/app/api/v1/](../backend/app/api/v1/router.py).
 
 > [!NOTE]
-> Phase 4 live endpoints (`/health`, `/auth/*`, `/profile`, `/farms/*`, `/admin/*`) authenticate and persist directly to the FastAPI + SQLAlchemy backend when running. When using Instant UI Preview Sandbox or when the backend is offline (`status = 0`), or when querying unimplemented Phase 5–7 endpoints (`404`/`501`) in `auto` mode, [services.ts](../frontend/src/api/services.ts) falls back cleanly to `demo_preview`. Setting `localStorage.tq_api_mode = "live_only"` disables all fallbacks.
+> Live endpoints currently active: Phase 4 (`/health`, `/auth/*`, `/profile`, `/farms/*`, `/admin/*`) and Phase 5 (`/predictions/yield`, `/predictions/yield/history`) authenticate, infer, and persist directly against the FastAPI + SQLAlchemy backend. When using Instant UI Preview Sandbox or when the backend is offline (`status = 0`), or when querying unimplemented Phase 5b–8 endpoints (`404`/`501`) in `auto` mode, [services.ts](../frontend/src/api/services.ts) falls back cleanly to `demo_preview`. Live validation (`422`), authorization (`401`/`403`), and missing-model (`503`) responses from `/predictions/yield` always surface directly to the user rather than falling back silently to preview numbers. Setting `localStorage.tq_api_mode = "live_only"` disables all fallbacks.
 
 ---
 
@@ -55,12 +55,16 @@ Validation rules:
 
 ## 3. Machine Learning & Computer Vision Modules (Phases 5 & 7)
 
-### 3.1 Crop Yield Prediction (Leak-Free)
-- `POST /predictions/yield` (Bearer)
-- **Request (`CropYieldRequest`)**: `{ farm_id?, crop, crop_year, season, state, area_hectares, annual_rainfall_mm, fertilizer_kg, pesticide_kg }`
-- **Guardrail**: Post-harvest `Production` is **strictly omitted** from the request schema to prevent target leakage (`r = 0.9965` leak in raw data).
-- **Response (`CropYieldResponse`)**: `{ id, crop, state, season, crop_year, area_hectares, predicted_yield, yield_unit, estimated_total_production, production_unit, model_name, model_version, feature_drivers[], advisory_note, created_at, source_mode }`
-- Note: `Coconut` yields report `yield_unit = "nuts/hectare"`; all other 54 crops report `"tonnes/hectare"`.
+### 3.1 Crop Yield Prediction (Leak-Free — **Phase 5 Live**)
+- `POST /predictions/yield` (Bearer, rate limit `20/minute`)
+- `GET /predictions/yield/history?limit=10` (Bearer — returns current farmer's persisted predictions newest first)
+- **Request (`CropYieldRequest`, `extra="forbid"`)**: `{ farm_id?, crop, crop_year, season, state, area_hectares, annual_rainfall_mm, fertilizer_kg, pesticide_kg }`
+- **Guardrails**:
+  - Post-harvest `Production` (and any unknown extra fields such as `production`, `Production`, `yield`) are **strictly rejected with HTTP `422`** (`extra="forbid"`) to prevent target leakage (`r = 0.9965` leak in raw data).
+  - Canonicalizes `crop` (`55` crops), `state` (`30` regions), and `season` (`6` seasons); verifies optional `farm_id` ownership (`404` if missing, `403` if owned by another farmer).
+  - Missing or corrupted `.joblib` artifact returns safe HTTP `503 Service Unavailable` without leaking server paths or tracebacks.
+- **Response (`CropYieldResponse`)**: `{ id, farm_id?, crop, state, season, crop_year, area_hectares, predicted_yield, yield_unit, estimated_total_production, production_unit, model_name, model_version, feature_drivers[], advisory_note, created_at, source_mode }`
+- Note: `Coconut` yields report `yield_unit = "nuts/hectare"`; all other 54 crops report `"tonnes/hectare"`. `feature_drivers[]` contains per-prediction normalized **Saabas decision-path / TreeSHAP** percentages (`positive` / `negative` / `neutral`). See [CROP_YIELD_ML.md](CROP_YIELD_ML.md).
 
 ### 3.2 Plant Disease Detection (CV)
 - `POST /disease/detect` (Bearer, `multipart/form-data`)

@@ -1,6 +1,6 @@
-# TerraQora AI — FastAPI Backend (Phase 4 Foundation)
+# TerraQora AI — FastAPI Backend (Phases 4–5)
 
-Clean, modular FastAPI backend built on SQLAlchemy 2.0, Alembic migrations, PostgreSQL (with SQLite local dev/test support), Pydantic v2 validation, bcrypt password hashing, JWT authentication, and Farmer/Admin RBAC.
+Modular FastAPI backend built on SQLAlchemy 2.0, Alembic migrations, PostgreSQL (with SQLite local dev/test support), Pydantic v2 validation, bcrypt password hashing, JWT authentication, Farmer/Admin RBAC, and live Phase 5 leak-free Crop Yield ML inference.
 
 ---
 
@@ -25,7 +25,8 @@ backend/
     │       ├── auth.py          # /auth/register, /auth/login, /auth/me
     │       ├── profile.py       # /profile (GET, PUT)
     │       ├── farms.py         # /farms CRUD (GET list, POST, GET/{id}, PUT/{id}, PATCH/{id}, DELETE/{id})
-    │       └── admin.py         # /admin/overview, /admin/users, PATCH /admin/users/{id}
+    │       ├── predictions.py   # Phase 5: POST /predictions/yield & GET /predictions/yield/history
+    │       └── admin.py         # /admin/overview (incl. live ML registry), /admin/users, PATCH /admin/users/{id}
     ├── core/
     │   ├── config.py            # Environment settings & production security guardrails
     │   ├── logging_config.py
@@ -35,7 +36,9 @@ backend/
     │   ├── base.py
     │   └── session.py           # Engine builder (PostgreSQL pool_pre_ping / SQLite FK enforcement)
     ├── models/                  # All 11 Phase 2 SQLAlchemy 2.0 ORM tables
-    └── schemas/                 # Pydantic v2 request/response schemas
+    ├── schemas/                 # Pydantic v2 request/response schemas (incl. leak-free CropYieldRequest)
+    └── services/
+        └── crop_yield_service.py # Thread-safe lazy .joblib loader, local driver attribution & DB persistence
 ```
 
 ---
@@ -45,25 +48,30 @@ backend/
 > [!IMPORTANT]
 > Always install and run Python tooling inside the workspace virtual environment (`.\.venv`), never global `pip`.
 
-1. **Create and activate virtual environment** (from repository root):
+1. **Create virtual environment & install dependencies** (from repository root):
    ```powershell
    python -m venv .venv
    .\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
    ```
 
-2. **Configure `.env`** (never commit `.env`):
+2. **Generate the Phase 5 Crop Yield model artifact** (required once after fresh clone because `*.joblib` binaries are gitignored):
+   ```powershell
+   .\.venv\Scripts\python.exe -m ml.training.train_crop_yield
+   ```
+
+3. **Configure `.env`** (never commit `.env`):
    Copy `.env.example` to `.env` at the repository root and set:
    - `JWT_SECRET_KEY` (generate via `.\.venv\Scripts\python.exe -c "import secrets; print(secrets.token_urlsafe(48))"`)
    - `DATABASE_URL` (e.g., `postgresql+psycopg://postgres:<password>@localhost:5432/terraqora_ai`, or omit during local development to use local SQLite `terraqora_dev.db`)
    - `CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173`
 
-3. **Run Alembic database migrations** (from `backend/`):
+4. **Run Alembic database migrations** (from `backend/`):
    ```powershell
    cd backend
    ..\.venv\Scripts\alembic.exe upgrade head
    ```
 
-4. **Start FastAPI server**:
+5. **Start FastAPI server**:
    ```powershell
    cd backend
    ..\.venv\Scripts\uvicorn.exe app.main:app --reload --port 8000

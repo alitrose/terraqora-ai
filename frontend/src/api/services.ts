@@ -154,7 +154,7 @@ export const profileService = {
 
 export const mlService = {
   predictYield: (payload: CropYieldRequest) =>
-    withPhasePendingFallback<CropYieldResponse>(
+    withFallback<CropYieldResponse>(
       () =>
         apiRequest<CropYieldResponse>('/predictions/yield', {
           method: 'POST',
@@ -162,6 +162,12 @@ export const mlService = {
           timeoutMs: 12000,
         }),
       () => demoSandbox.predictYield(payload)
+    ),
+
+  getYieldHistory: () =>
+    withFallback<CropYieldResponse[]>(
+      () => apiRequest<CropYieldResponse[]>('/predictions/yield/history?limit=10'),
+      () => demoSandbox.getYieldHistory()
     ),
 
   detectDisease: (file: File, cropHint: string) =>

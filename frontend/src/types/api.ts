@@ -83,6 +83,7 @@ export interface FeatureDriver {
 
 export interface CropYieldResponse {
   id: string;
+  farm_id?: string | null;
   crop: string;
   state: string;
   season: string;

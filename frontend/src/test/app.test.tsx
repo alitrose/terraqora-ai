@@ -100,7 +100,7 @@ describe('TerraQora AI — Phase 3 Frontend Suite', () => {
     expect(within(usersTable).queryByText(/Dr\. Karthik Menon/i)).not.toBeInTheDocument();
   });
 
-  it('validates leak-free Crop Yield Prediction form (no Production input) and handles Coconut nuts/ha units', async () => {
+  it('validates leak-free Crop Yield Prediction form (no Production input), links saved farms, and handles Coconut nuts/ha units', async () => {
     renderAt('/auth');
     const user = await signInAsDemoFarmer();
 
@@ -108,12 +108,18 @@ describe('TerraQora AI — Phase 3 Frontend Suite', () => {
     expect(await screen.findByText(/Field & Seasonal Parameters/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/Total Production/i)).not.toBeInTheDocument();
 
-    const cropSelect = screen.getByLabelText(/Crop \(55 Dataset Crops\)/i);
-    await user.selectOptions(cropSelect, 'Coconut');
+    const farmSelect = await screen.findByLabelText(/Link Saved Farm Plot/i);
+    await user.selectOptions(farmSelect, 'farm-pollachi-01');
+    const areaInput = screen.getByLabelText(/Cultivated Area \(ha\)/i) as HTMLInputElement;
+    expect(Number(areaInput.value)).toBe(4.8);
+
+    const cropSelect = screen.getByLabelText(/Crop \(55 Dataset Crops\)/i) as HTMLSelectElement;
+    expect(cropSelect.value).toBe('Coconut');
 
     await user.click(screen.getByRole('button', { name: /Predict Crop Yield/i }));
     expect(await screen.findByText(/Predicted Unit Yield/i)).toBeInTheDocument();
     expect((await screen.findAllByText(/nuts\/hectare/i)).length).toBeGreaterThanOrEqual(2);
+    expect(await screen.findByText(/Recent Yield Forecasts/i)).toBeInTheDocument();
   });
 
   it('validates Plant Disease upload file type/size and renders low-confidence uncertainty warning', async () => {

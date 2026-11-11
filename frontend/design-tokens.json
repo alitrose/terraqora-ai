@@ -1,0 +1,49 @@
+{
+  "brand": {
+    "name": "TerraQora AI",
+    "tagline": "Intelligence for Every Acre.",
+    "theme": "Editorial Precision Agritech"
+  },
+  "colors": {
+    "forestDeep": "#123524",
+    "forestHover": "#1A4731",
+    "leafEmerald": "#2D6A4F",
+    "sproutGreen": "#52B788",
+    "sageMist": "#EDF4EF",
+    "sageBorder": "#D0E0D5",
+    "warmWhite": "#FAF9F5",
+    "surfaceWhite": "#FFFFFF",
+    "surfaceMuted": "#F3F2EC",
+    "borderSubtle": "#E4E8E1",
+    "harvestGold": "#C9972C",
+    "harvestGoldLight": "#F7EFE0",
+    "soilCharcoal": "#1B241E",
+    "slateMuted": "#5A665E",
+    "status": {
+      "success": "#2D6A4F",
+      "warning": "#C97A16",
+      "danger": "#B83A2D",
+      "info": "#2C6B8A"
+    },
+    "charts": [
+      "#123524",
+      "#2D6A4F",
+      "#52B788",
+      "#C9972C",
+      "#74A57F",
+      "#3D5A80"
+    ]
+  },
+  "typography": {
+    "display": "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif",
+    "body": "'Inter', system-ui, -apple-system, sans-serif",
+    "mono": "'JetBrains Mono', ui-monospace, monospace"
+  },
+  "radii": {
+    "sm": "0.5rem",
+    "md": "0.75rem",
+    "lg": "1rem",
+    "xl": "1.25rem",
+    "full": "9999px"
+  }
+}

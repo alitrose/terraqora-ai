@@ -15,7 +15,9 @@ from app.schemas.admin import (
     AdminUserItem,
     AdminUserUpdate,
 )
+from app.services.crop_rec_service import get_crop_rec_registry_status
 from app.services.crop_yield_service import get_crop_yield_registry_status
+from app.services.fertilizer_service import get_fertilizer_registry_status
 
 logger = logging.getLogger("terraqora.admin")
 router = APIRouter(prefix="/admin", tags=["Administration"])
@@ -86,22 +88,8 @@ def get_admin_overview(
             metric_value="Pending Phase 7 Training",
             artifact_size="< 10 MB target",
         ),
-        AdminModelStatusItem(
-            module="Crop Recommendation",
-            algorithm="Random Forest / Light Pipeline (22 Crops)",
-            status="Phase 5 Scheduled",
-            metric_label="5-Fold Accuracy",
-            metric_value="Pending Phase 5b Training",
-            artifact_size="< 5 MB target",
-        ),
-        AdminModelStatusItem(
-            module="Fertilizer Recommendation",
-            algorithm="Gradient Boosted Classifier + Agronomic Guardrails",
-            status="Phase 5 Scheduled",
-            metric_label="Stratified F1",
-            metric_value="Pending Phase 5b Training",
-            artifact_size="< 4 MB target",
-        ),
+        get_crop_rec_registry_status(),
+        get_fertilizer_registry_status(),
     ]
 
     logger.info("Admin overview queried by admin_id=%s", current_admin.id)

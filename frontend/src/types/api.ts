@@ -132,7 +132,7 @@ export interface FertilizerRequest {
   soil_ph: number;
   soil_type: string;
   crop_type: string;
-  location: string;
+  location?: string | null;
 }
 
 export interface NutrientLevel {
@@ -145,8 +145,21 @@ export interface NutrientLevel {
 
 export interface FertilizerResponse {
   id: string;
+  farm_id?: string | null;
+  nitrogen?: number;
+  phosphorus?: number;
+  potassium?: number;
+  soil_ph?: number;
+  soil_type?: string;
+  crop_type?: string;
+  location?: string | null;
   recommended_fertilizer: string;
   confidence: number;
+  ml_predicted_grade?: string | null;
+  recommendation_mode?:
+    | 'ml_grade_with_agronomic_guardrails'
+    | 'agronomic_sufficiency_guardrail';
+  dataset_coverage_note?: string;
   nutrient_levels: NutrientLevel[];
   ph_assessment: string;
   advisory_notes: string;
@@ -165,8 +178,8 @@ export interface CropRecommendationRequest {
   humidity_pct: number;
   soil_ph: number;
   rainfall_mm: number;
-  season: string;
-  region: string;
+  season?: string | null;
+  region?: string | null;
 }
 
 export interface CropCandidate {
@@ -177,6 +190,16 @@ export interface CropCandidate {
 
 export interface CropRecommendationResponse {
   id: string;
+  farm_id?: string | null;
+  nitrogen?: number;
+  phosphorus?: number;
+  potassium?: number;
+  temperature_c?: number;
+  humidity_pct?: number;
+  soil_ph?: number;
+  rainfall_mm?: number;
+  season?: string | null;
+  region?: string | null;
   recommended_crop: string;
   top_candidates: CropCandidate[];
   soil_climate_summary: string;

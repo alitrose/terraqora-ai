@@ -149,6 +149,8 @@ let demoReports: GeneratedReport[] = [
 ];
 
 let demoYieldHistory: CropYieldResponse[] = [];
+let demoCropRecHistory: CropRecommendationResponse[] = [];
+let demoFertilizerHistory: FertilizerResponse[] = [];
 
 export const demoSandbox = {
   login(email: string, roleHint?: 'farmer' | 'admin'): AuthSession {
@@ -337,55 +339,100 @@ export const demoSandbox = {
     const lowN = req.nitrogen < 40;
     const lowP = req.phosphorus < 30;
     const lowK = req.potassium < 30;
+    const allSufficient = !lowN && !lowP && !lowK;
 
-    let recommended = 'Balanced NPK 14-35-14 + Organic Compost';
-    if (lowN && !lowP && !lowK) recommended = 'Urea (46% N) — Split Basal + Top Dress';
-    else if (lowP && lowN) recommended = 'DAP (18-46-0) + Micronutrient Check';
-    else if (lowK && !lowN) recommended = 'MOP (Muriate of Potash 0-0-60)';
-    else if (!lowN && !lowP && !lowK) recommended = 'NPK 10-26-26 Maintenance + Biofertilizer';
+    let mlGrade: string | null = '20-20';
+    let recommended = '20-20';
+    let mode: 'ml_grade_with_agronomic_guardrails' | 'agronomic_sufficiency_guardrail' =
+      'ml_grade_with_agronomic_guardrails';
+    let confidence = 0.89;
+
+    if (allSufficient) {
+      mlGrade = null;
+      mode = 'agronomic_sufficiency_guardrail';
+      recommended = 'Soil Nutrients Sufficient — Organic Maintenance Only';
+      confidence = 1.0;
+    } else if (lowN && !lowP && !lowK) {
+      mlGrade = 'Urea';
+      recommended = 'Urea';
+    } else if (lowP && !lowN && !lowK) {
+      mlGrade = 'DAP';
+      recommended = 'DAP';
+    } else if (lowP && lowN && lowK) {
+      mlGrade = '17-17-17';
+      recommended = '17-17-17';
+    } else if (lowK && lowP) {
+      mlGrade = '10-26-26';
+      recommended = '10-26-26';
+    } else if (lowP && req.phosphorus < 15) {
+      mlGrade = '14-35-14';
+      recommended = '14-35-14';
+    } else if (lowN && lowP) {
+      mlGrade = req.nitrogen < 20 ? '28-28' : '20-20';
+      recommended = mlGrade;
+    }
 
     const phAssessment =
       req.soil_ph < 5.8
-        ? 'Acidic soil (< 5.8): Consider agricultural lime amendment to restore phosphorus uptake.'
+        ? `Acidic soil (pH ${req.soil_ph.toFixed(1)} < 5.8): Consult a local KVK lab regarding soil-buffer-calibrated lime amendment before mineral NPK application.`
         : req.soil_ph > 7.8
-          ? 'Alkaline soil (> 7.8): Consider gypsum/organic matter enrichment and chelated zinc/iron check.'
-          : 'Optimal pH window (5.8–7.8) for macro- and micronutrient availability.';
+          ? `Alkaline soil (pH ${req.soil_ph.toFixed(1)} > 7.8): Seek KVK confirmation for organic matter enrichment or gypsum/chelated micronutrient management.`
+          : `Favorable soil reaction (pH ${req.soil_ph.toFixed(1)}, within 5.8–7.8): Primary macronutrient availability is well supported.`;
 
-    return {
+    const entry: FertilizerResponse = {
       id: makeId('fert'),
+      farm_id: req.farm_id ?? null,
+      nitrogen: req.nitrogen,
+      phosphorus: req.phosphorus,
+      potassium: req.potassium,
+      soil_ph: req.soil_ph,
+      soil_type: req.soil_type,
+      crop_type: req.crop_type,
+      location: req.location ?? null,
       recommended_fertilizer: recommended,
-      confidence: 0.89,
+      confidence,
+      ml_predicted_grade: mlGrade,
+      recommendation_mode: mode,
+      dataset_coverage_note: `Preview sandbox assessment mapping ${req.crop_type} and ${req.soil_type} texture against benchmark grade classes.`,
       nutrient_levels: [
         {
           nutrient: 'Nitrogen (N)',
           value: req.nitrogen,
           optimal_min: 40,
-          optimal_max: 90,
-          status: req.nitrogen < 40 ? 'low' : req.nitrogen > 100 ? 'high' : 'optimal',
+          optimal_max: 95,
+          status: req.nitrogen < 40 ? 'low' : req.nitrogen > 95 ? 'high' : 'optimal',
         },
         {
           nutrient: 'Phosphorus (P)',
           value: req.phosphorus,
           optimal_min: 30,
           optimal_max: 65,
-          status: req.phosphorus < 30 ? 'low' : req.phosphorus > 80 ? 'high' : 'optimal',
+          status: req.phosphorus < 30 ? 'low' : req.phosphorus > 65 ? 'high' : 'optimal',
         },
         {
           nutrient: 'Potassium (K)',
           value: req.potassium,
           optimal_min: 30,
-          optimal_max: 70,
-          status: req.potassium < 30 ? 'low' : req.potassium > 85 ? 'high' : 'optimal',
+          optimal_max: 75,
+          status: req.potassium < 30 ? 'low' : req.potassium > 75 ? 'high' : 'optimal',
         },
       ],
       ph_assessment: phAssessment,
-      advisory_notes: `Preview guidance for ${req.crop_type} on ${req.soil_type} soil (${req.location || 'Regional'}). Split nitrogen applications across active tillering/vegetative stages to minimize leaching.`,
+      advisory_notes: allSufficient
+        ? `Rule Guardrail Active (${req.crop_type} on ${req.soil_type}, ${req.location || 'Regional'}): Measured macronutrients meet sufficiency thresholds. Avoid unnecessary chemical inputs and maintain organic compost.`
+        : `Preview ML Grade + Agronomic Balancing (${req.crop_type} on ${req.soil_type}, ${req.location || 'Regional'}): Use split timing across basal and vegetative stages and confirm exact field rates with KVK testing.`,
       expert_disclaimer:
-        'Indicative guidance only. Validate exact kg/acre chemical dosages against an accredited Soil Health Card laboratory test and local agricultural extension officer.',
-      model_version: 'preview-v0 (Trained fertilizer classifier in Phase 5)',
+        'Qualitative formulation guidance only — chemical application rates (kg/ha or g/plant) are intentionally NOT fabricated. Confirm exact field doses via accredited Soil Health Card testing and your local KVK.',
+      model_version: 'preview-v0',
       created_at: new Date().toISOString(),
       source_mode: 'demo_preview',
     };
+    demoFertilizerHistory = [entry, ...demoFertilizerHistory].slice(0, 10);
+    return entry;
+  },
+
+  getFertilizerHistory(): FertilizerResponse[] {
+    return [...demoFertilizerHistory];
   },
 
   recommendCrop(req: CropRecommendationRequest): CropRecommendationResponse {
@@ -415,8 +462,18 @@ export const demoSandbox = {
       tertiary = 'coffee';
     }
 
-    return {
+    const entry: CropRecommendationResponse = {
       id: makeId('crop'),
+      farm_id: req.farm_id ?? null,
+      nitrogen: req.nitrogen,
+      phosphorus: req.phosphorus,
+      potassium: req.potassium,
+      temperature_c: req.temperature_c,
+      humidity_pct: req.humidity_pct,
+      soil_ph: req.soil_ph,
+      rainfall_mm: req.rainfall_mm,
+      season: req.season ?? null,
+      region: req.region ?? null,
       recommended_crop: primary,
       top_candidates: [
         {
@@ -427,7 +484,7 @@ export const demoSandbox = {
         {
           crop: secondary,
           probability: 0.15,
-          fit_reason: `Viable secondary option in ${req.season} (${req.region}).`,
+          fit_reason: `Viable secondary candidate across NPK (${req.nitrogen}-${req.phosphorus}-${req.potassium}) and climate envelope.`,
         },
         {
           crop: tertiary,
@@ -435,11 +492,17 @@ export const demoSandbox = {
           fit_reason: 'Moderate rotational diversification candidate.',
         },
       ],
-      soil_climate_summary: `Evaluated NPK (${req.nitrogen}-${req.phosphorus}-${req.potassium}), pH ${req.soil_ph}, ${req.temperature_c}°C, ${req.humidity_pct}% RH, ${req.rainfall_mm} mm rainfall.`,
-      model_version: 'preview-v0 (Crop_recommendation.csv model in Phase 5)',
+      soil_climate_summary: `Evaluated soil NPK (${req.nitrogen}-${req.phosphorus}-${req.potassium}), pH ${req.soil_ph.toFixed(1)}, ${req.temperature_c.toFixed(1)}°C, ${req.humidity_pct}% humidity, and ${req.rainfall_mm} mm rainfall. Preview mode approximates the 7-feature model.`,
+      model_version: 'preview-v0',
       created_at: new Date().toISOString(),
       source_mode: 'demo_preview',
     };
+    demoCropRecHistory = [entry, ...demoCropRecHistory].slice(0, 10);
+    return entry;
+  },
+
+  getCropRecHistory(): CropRecommendationResponse[] {
+    return [...demoCropRecHistory];
   },
 
   getWeatherIrrigation(req: WeatherIrrigationRequest): WeatherIrrigationResponse {
@@ -683,11 +746,11 @@ export const demoSandbox = {
       models: [
         {
           module: 'Crop Yield Prediction',
-          algorithm: 'XGBoost / Random Forest (Leak-Free Pipeline)',
-          status: 'Phase 5 Scheduled',
-          metric_label: 'Chronological R²',
-          metric_value: 'Pending Phase 5 Training',
-          artifact_size: '< 15 MB target',
+          algorithm: 'Segmented Histogram GBDT / RF (55 Crops, Leak-Free)',
+          status: 'Active (Phase 5 Live · Demo Preview)',
+          metric_label: 'Chronological Held-Out R²',
+          metric_value: '0.838 (Non-Coco) / 0.873 (Coco)',
+          artifact_size: '0.47 MB',
         },
         {
           module: 'Plant Disease Vision',
@@ -699,19 +762,19 @@ export const demoSandbox = {
         },
         {
           module: 'Crop Recommendation',
-          algorithm: 'Random Forest / Light Pipeline (22 Crops)',
-          status: 'Phase 5 Scheduled',
-          metric_label: '5-Fold Accuracy',
-          metric_value: 'Pending Phase 5 Training',
-          artifact_size: '< 5 MB target',
+          algorithm: 'Gaussian Naive Bayes (7 Features, 22 Crops)',
+          status: 'Active (Phase 5b Live · Demo Preview)',
+          metric_label: 'Stratified Held-Out Test',
+          metric_value: 'Acc 0.9955 | Macro-F1 0.9954',
+          artifact_size: '5.6 KB',
         },
         {
           module: 'Fertilizer Recommendation',
-          algorithm: 'Gradient Boosted Classifier + Agronomic Guardrails',
-          status: 'Phase 5 Scheduled',
-          metric_label: 'Stratified F1',
-          metric_value: 'Pending Phase 5 Training',
-          artifact_size: '< 4 MB target',
+          algorithm: 'Logistic Regression (NPK Grade) + ICAR Agronomic Guardrails',
+          status: 'Active (Phase 5b Live · Demo Preview)',
+          metric_label: 'Stratified Held-Out Test',
+          metric_value: 'Macro-F1 1.0000 | 7 Grades',
+          artifact_size: '1.6 KB',
         },
       ],
       users: [

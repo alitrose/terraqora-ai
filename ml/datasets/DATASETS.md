@@ -26,11 +26,17 @@ All original datasets remain preserved untouched at their source locations. Copi
 
 ---
 
-## 2. Public Datasets Planned for Acquisition (Phases 5 & 7)
+## 2. Acquired & Planned Public Datasets (Phases 5b & 7)
 
-### Fertilizer Recommendation Dataset (Module 4 — Phase 5)
-- **Planned Source:** Standard public Agricultural Fertilizer Prediction dataset (`Temperature, Humidity, Moisture, Soil Type, Crop Type, Nitrogen, Potassium, Phosphorous, Fertilizer Name`) paired with ICAR soil-test NPK threshold ranges (`N, P, K, pH, Soil Type, Crop Type`).
-- **Validation Gate:** Verify zero missing labels, valid pH/NPK bounds, deduplication, and stratified cross-validation before model serialization. Never fabricate chemical dosages.
+### `Fertilizer_Prediction.csv` (Module 4 — **Acquired & Audited in Phase 5b**)
+- **Source Provenance:** Public Fertilizer Prediction dataset (`gdabhishek/fertilizer-prediction` / `FarmApp` mirror of standard Kaggle agricultural formulation dataset; public research/educational dataset).
+- **Local Copy:** `ml/datasets/raw/Fertilizer_Prediction.csv` (`3,829 bytes`)
+- **SHA-256:** `dfd69cee9d3d7a4403aab5647d5749050ae406ad42dc9ce3f508aa3442955e41`
+- **Shape & Targets:** `99` rows × `9` columns (`Temparature`, `Humidity `, `Moisture`, `Soil Type`, `Crop Type`, `Nitrogen`, `Potassium`, `Phosphorous`, `Fertilizer Name`), `0` missing values, `0` duplicates, `7` commercial grades (`Urea`, `DAP`, `28-28`, `14-35-14`, `20-20`, `17-17-17`, `10-26-26`).
+- **Audit Findings & Guardrails:**
+  - Raw column typos (`Temparature`, trailing space `Humidity `, `Phosphorous`) normalized cleanly inside [fertilizer_features.py](../preprocessing/fertilizer_features.py).
+  - Does **not** contain soil `pH`, straight MOP (`0-0-60`), or numeric application dosages (`kg/ha`); production inference strictly combines 3-NPK grade classification with ICAR soil sufficiency & pH guardrails and refuses to invent chemical application weights.
+- **Candidate Datasets Audited & Rejected:** `irakozekelly/fertilizer-prediction` (`100k` rows — uniform random noise, MI ≤ `0.014`, 5-fold CV `14.43%`), `Tejasgolhar f2.csv` (`75%` duplicated rows / singleton class), and `AgriNet` (`doi:10.17632/c7tr9j78td.1` — genuine soil lab chemistry without fertilizer labels). See [RECOMMENDATION_ML.md](../../docs/RECOMMENDATION_ML.md).
 
 ### PlantVillage Leaf Disease Dataset (Module 2 — Phase 7)
 - **Planned Source:** PlantVillage Dataset (Hughes & Salathé, 2015 — CC0 / Public Domain via TensorFlow Datasets `plant_village` or verified Kaggle/GitHub mirror).

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Sprout } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { History, ShieldCheck, Sprout } from 'lucide-react';
 import {
   Bar,
   BarChart,
@@ -9,7 +9,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { mlService } from '../api/services';
+import { mlService, profileService } from '../api/services';
 import { AppShell } from '../components/AppShell';
 import {
   EmptyState,
@@ -19,9 +19,11 @@ import {
 } from '../components/StatusState';
 import { CROP_SEASONS, INDIAN_STATES } from '../data/agriCatalog';
 import { useToast } from '../context/ToastContext';
-import type { CropRecommendationResponse } from '../types/api';
+import type { CropRecommendationResponse, Farm } from '../types/api';
 
 export function CropRecommendationPage() {
+  const [farms, setFarms] = useState<Farm[]>([]);
+  const [selectedFarmId, setSelectedFarmId] = useState<string>('');
   const [nitrogen, setNitrogen] = useState(85);
   const [phosphorus, setPhosphorus] = useState(50);
   const [potassium, setPotassium] = useState(42);
@@ -35,19 +37,85 @@ export function CropRecommendationPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CropRecommendationResponse | null>(null);
+  const [history, setHistory] = useState<CropRecommendationResponse[]>([]);
   const { notify } = useToast();
+
+  useEffect(() => {
+    let active = true;
+    async function loadInitialContext() {
+      try {
+        const [farmList, recHistory] = await Promise.all([
+          profileService.listFarms(),
+          mlService.getCropRecHistory(),
+        ]);
+        if (!active) return;
+        setFarms(farmList);
+        setHistory(recHistory);
+      } catch {
+        // Non-blocking: recommendation form remains usable even if history/farms fail to load
+      }
+    }
+    loadInitialContext();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleFarmChange = (farmId: string) => {
+    setSelectedFarmId(farmId);
+    if (!farmId) return;
+    const farm = farms.find((f) => f.id === farmId);
+    if (!farm) return;
+
+    if (farm.soil_ph !== null && Number.isFinite(farm.soil_ph)) {
+      setPh(farm.soil_ph);
+    }
+    const matchedState = INDIAN_STATES.find(
+      (s) => s.toLowerCase() === farm.state.trim().toLowerCase()
+    );
+    if (matchedState) {
+      setRegion(matchedState);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (ph < 0 || ph > 14 || humidity < 0 || humidity > 100) {
-      setError('Soil pH must be 0–14 and humidity must be 0–100%.');
+    if (
+      !Number.isFinite(nitrogen) ||
+      !Number.isFinite(phosphorus) ||
+      !Number.isFinite(potassium) ||
+      nitrogen < 0 ||
+      nitrogen > 500 ||
+      phosphorus < 0 ||
+      phosphorus > 500 ||
+      potassium < 0 ||
+      potassium > 500
+    ) {
+      setError('NPK values must be finite numbers between 0 and 500.');
+      return;
+    }
+    if (!Number.isFinite(ph) || ph < 0 || ph > 14) {
+      setError('Soil pH must be between 0.0 and 14.0.');
+      return;
+    }
+    if (!Number.isFinite(humidity) || humidity < 0 || humidity > 100) {
+      setError('Humidity must be between 0% and 100%.');
+      return;
+    }
+    if (!Number.isFinite(temperature) || temperature < -10 || temperature > 60) {
+      setError('Temperature must be between -10°C and 60°C.');
+      return;
+    }
+    if (!Number.isFinite(rainfall) || rainfall < 0 || rainfall > 5000) {
+      setError('Rainfall must be between 0 and 5,000 mm.');
       return;
     }
 
     setLoading(true);
     try {
       const res = await mlService.recommendCrop({
+        farm_id: selectedFarmId || undefined,
         nitrogen,
         phosphorus,
         potassium,
@@ -59,6 +127,7 @@ export function CropRecommendationPage() {
         region,
       });
       setResult(res);
+      setHistory((prev) => [res, ...prev.filter((item) => item.id !== res.id)].slice(0, 10));
       notify(`Top crop match: ${res.recommended_crop}`, 'success');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Recommendation failed.');
@@ -72,6 +141,16 @@ export function CropRecommendationPage() {
       title="Crop Recommendation"
       subtitle="Soil nutrient & climate compatibility ranking across 22 curated crops."
     >
+      <div className="mb-6 flex items-start gap-3 rounded-2xl border border-emerald-border bg-emerald-mist/60 px-4 py-3 text-xs text-forest-deep">
+        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-leaf" />
+        <p>
+          <strong>Dataset Feature Scope:</strong> Crop probabilities are ranked strictly from the
+          7 validated soil & climate measurements (<code>N, P, K, temperature, humidity, pH, rainfall</code>)
+          in <code>Crop_recommendation.csv</code> (22 crops). Season and Region are captured as
+          plot context without altering model scores.
+        </p>
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-12">
         <form
           onSubmit={handleSubmit}
@@ -83,6 +162,26 @@ export function CropRecommendationPage() {
 
           {error && <ErrorAlert message={error} />}
 
+          <div>
+            <label htmlFor="cr-farm" className="block text-xs font-semibold text-soil-charcoal">
+              Link Saved Farm Plot (Optional)
+            </label>
+            <select
+              id="cr-farm"
+              value={selectedFarmId}
+              onChange={(e) => handleFarmChange(e.target.value)}
+              className="mt-1.5 w-full rounded-xl border border-soil-border bg-parchment/50 px-3 py-2 text-sm focus:border-emerald-leaf focus:bg-white focus:outline-none"
+            >
+              <option value="">Custom / Unlinked Plot</option>
+              {farms.map((farm) => (
+                <option key={farm.id} value={farm.id}>
+                  {farm.name} ({farm.state}
+                  {farm.soil_ph !== null ? ` · pH ${farm.soil_ph}` : ''})
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="cr-n" className="block text-xs font-semibold text-soil-charcoal">
@@ -92,6 +191,7 @@ export function CropRecommendationPage() {
                 id="cr-n"
                 type="number"
                 min={0}
+                max={500}
                 value={nitrogen}
                 onChange={(e) => setNitrogen(Number(e.target.value))}
                 className="mt-1.5 w-full rounded-xl border border-soil-border bg-parchment/50 px-3 py-2 font-mono text-sm"
@@ -106,6 +206,7 @@ export function CropRecommendationPage() {
                 id="cr-p"
                 type="number"
                 min={0}
+                max={500}
                 value={phosphorus}
                 onChange={(e) => setPhosphorus(Number(e.target.value))}
                 className="mt-1.5 w-full rounded-xl border border-soil-border bg-parchment/50 px-3 py-2 font-mono text-sm"
@@ -120,6 +221,7 @@ export function CropRecommendationPage() {
                 id="cr-k"
                 type="number"
                 min={0}
+                max={500}
                 value={potassium}
                 onChange={(e) => setPotassium(Number(e.target.value))}
                 className="mt-1.5 w-full rounded-xl border border-soil-border bg-parchment/50 px-3 py-2 font-mono text-sm"
@@ -149,6 +251,8 @@ export function CropRecommendationPage() {
               <input
                 id="cr-temp"
                 type="number"
+                min={-10}
+                max={60}
                 step={0.5}
                 value={temperature}
                 onChange={(e) => setTemperature(Number(e.target.value))}
@@ -179,6 +283,7 @@ export function CropRecommendationPage() {
                 id="cr-rain"
                 type="number"
                 min={0}
+                max={5000}
                 value={rainfall}
                 onChange={(e) => setRainfall(Number(e.target.value))}
                 className="mt-1.5 w-full rounded-xl border border-soil-border bg-parchment/50 px-3 py-2 font-mono text-sm"
@@ -187,7 +292,7 @@ export function CropRecommendationPage() {
 
             <div>
               <label htmlFor="cr-season" className="block text-xs font-semibold text-soil-charcoal">
-                Season
+                Season (Context)
               </label>
               <select
                 id="cr-season"
@@ -206,7 +311,7 @@ export function CropRecommendationPage() {
 
           <div>
             <label htmlFor="cr-region" className="block text-xs font-semibold text-soil-charcoal">
-              Region / State
+              Region / State (Context)
             </label>
             <select
               id="cr-region"
@@ -250,6 +355,9 @@ export function CropRecommendationPage() {
                   <h3 className="font-display text-2xl font-bold capitalize text-forest-deep">
                     {result.recommended_crop}
                   </h3>
+                  <p className="mt-0.5 text-[11px] font-mono text-soil-muted">
+                    Gaussian Naive Bayes · {result.model_version}
+                  </p>
                 </div>
                 <SourceModeBadge mode={result.source_mode} />
               </div>
@@ -294,7 +402,55 @@ export function CropRecommendationPage() {
                 ))}
               </div>
 
-              <p className="text-xs text-soil-muted">{result.soil_climate_summary}</p>
+              <p className="text-xs leading-relaxed text-soil-muted">
+                {result.soil_climate_summary}
+              </p>
+            </div>
+          )}
+
+          {history.length > 0 && (
+            <div className="rounded-2xl border border-soil-border bg-white p-5 shadow-card">
+              <div className="flex items-center justify-between border-b border-soil-border pb-3">
+                <div className="flex items-center gap-2">
+                  <History className="h-4 w-4 text-forest-deep" />
+                  <h3 className="font-display text-sm font-bold text-forest-deep">
+                    Recent Crop Suitability Matches
+                  </h3>
+                </div>
+                <span className="text-xs text-soil-muted">{history.length} saved</span>
+              </div>
+              <ul className="mt-3 divide-y divide-soil-border">
+                {history.slice(0, 5).map((item) => (
+                  <li key={item.id} className="py-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setResult(item)}
+                      className="flex w-full flex-wrap items-center justify-between gap-2 rounded-lg px-2 py-1 text-left transition-colors hover:bg-parchment"
+                    >
+                      <div>
+                        <p className="text-xs font-semibold capitalize text-forest-deep">
+                          {item.recommended_crop}
+                          {item.region ? ` · ${item.region}` : ''}
+                          {item.season ? ` (${item.season})` : ''}
+                        </p>
+                        <p className="text-[11px] font-mono text-soil-muted">
+                          {item.soil_ph !== undefined
+                            ? `NPK ${item.nitrogen}-${item.phosphorus}-${item.potassium} · pH ${item.soil_ph.toFixed(1)} · ${item.rainfall_mm} mm`
+                            : item.soil_climate_summary.slice(0, 64)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2.5">
+                        {item.top_candidates[0] && (
+                          <span className="font-mono text-sm font-bold text-emerald-leaf">
+                            {(item.top_candidates[0].probability * 100).toFixed(0)}%
+                          </span>
+                        )}
+                        <SourceModeBadge mode={item.source_mode} />
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>

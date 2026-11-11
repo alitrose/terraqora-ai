@@ -18,6 +18,14 @@ from app.schemas.predictions import (
     CropYieldResponse,
     FeatureDriverOut,
 )
+from app.schemas.recommendations import (
+    CropCandidateOut,
+    CropRecommendationRequest,
+    CropRecommendationResponse,
+    FertilizerRequest,
+    FertilizerResponse,
+    NutrientLevelOut,
+)
 from app.schemas.profile import FarmerProfileOut, FarmerProfileUpdate, PreferredUnits
 
 __all__ = [
@@ -26,6 +34,9 @@ __all__ = [
     "AdminUserItem",
     "AdminUserUpdate",
     "AuthResponse",
+    "CropCandidateOut",
+    "CropRecommendationRequest",
+    "CropRecommendationResponse",
     "CropYieldRequest",
     "CropYieldResponse",
     "FarmCreate",
@@ -34,8 +45,11 @@ __all__ = [
     "FarmerProfileOut",
     "FarmerProfileUpdate",
     "FeatureDriverOut",
+    "FertilizerRequest",
+    "FertilizerResponse",
     "IrrigationType",
     "LoginRequest",
+    "NutrientLevelOut",
     "PreferredUnits",
     "RegisterRequest",
     "SupportedLanguage",

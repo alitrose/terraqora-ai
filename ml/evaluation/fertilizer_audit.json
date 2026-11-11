@@ -1,0 +1,287 @@
+{
+  "dataset_path": "ml/datasets/raw/Fertilizer_Prediction.csv",
+  "sha256": "dfd69cee9d3d7a4403aab5647d5749050ae406ad42dc9ce3f508aa3442955e41",
+  "shape": {
+    "rows": 99,
+    "columns": 9
+  },
+  "raw_columns": [
+    "Temparature",
+    "Humidity ",
+    "Moisture",
+    "Soil Type",
+    "Crop Type",
+    "Nitrogen",
+    "Potassium",
+    "Phosphorous",
+    "Fertilizer Name"
+  ],
+  "column_anomalies_detected": [
+    "Typo 'Temparature' -> standardized to 'Temperature' in preprocessing.",
+    "Trailing whitespace 'Humidity ' -> trimmed to 'Humidity'.",
+    "Spelling variant 'Phosphorous' -> standardized to 'Phosphorus'."
+  ],
+  "missing_values": {
+    "Temperature": 0,
+    "Humidity": 0,
+    "Moisture": 0,
+    "Soil Type": 0,
+    "Crop Type": 0,
+    "Nitrogen": 0,
+    "Potassium": 0,
+    "Phosphorus": 0,
+    "Fertilizer Name": 0
+  },
+  "duplicates": {
+    "exact_rows": 0
+  },
+  "class_balance": {
+    "num_classes": 7,
+    "counts": {
+      "Urea": 22,
+      "DAP": 18,
+      "28-28": 17,
+      "14-35-14": 14,
+      "20-20": 14,
+      "17-17-17": 7,
+      "10-26-26": 7
+    },
+    "min_class_count": 7,
+    "max_class_count": 22
+  },
+  "categorical_domains": {
+    "soil_types": [
+      "Black",
+      "Clayey",
+      "Loamy",
+      "Red",
+      "Sandy"
+    ],
+    "crop_types": [
+      "Barley",
+      "Cotton",
+      "Ground Nuts",
+      "Maize",
+      "Millets",
+      "Oil seeds",
+      "Paddy",
+      "Pulses",
+      "Sugarcane",
+      "Tobacco",
+      "Wheat"
+    ]
+  },
+  "numeric_distributions": {
+    "Temperature": {
+      "min": 25.0,
+      "p25": 28.0,
+      "median": 30.0,
+      "mean": 30.28,
+      "p75": 33.0,
+      "max": 38.0,
+      "std": 3.5
+    },
+    "Humidity": {
+      "min": 50.0,
+      "p25": 54.0,
+      "median": 60.0,
+      "mean": 59.15,
+      "p75": 64.0,
+      "max": 72.0,
+      "std": 5.84
+    },
+    "Moisture": {
+      "min": 25.0,
+      "p25": 34.0,
+      "median": 41.0,
+      "mean": 43.18,
+      "p75": 50.5,
+      "max": 65.0,
+      "std": 11.27
+    },
+    "Nitrogen": {
+      "min": 4.0,
+      "p25": 10.0,
+      "median": 13.0,
+      "mean": 18.91,
+      "p75": 24.0,
+      "max": 42.0,
+      "std": 11.6
+    },
+    "Phosphorus": {
+      "min": 0.0,
+      "p25": 9.0,
+      "median": 19.0,
+      "mean": 18.61,
+      "p75": 30.0,
+      "max": 42.0,
+      "std": 13.48
+    },
+    "Potassium": {
+      "min": 0.0,
+      "p25": 0.0,
+      "median": 0.0,
+      "mean": 3.38,
+      "p75": 7.5,
+      "max": 19.0,
+      "std": 5.81
+    }
+  },
+  "mutual_information_with_target": {
+    "Temperature": 0.0783,
+    "Humidity": 0.0285,
+    "Moisture": 0.0484,
+    "Nitrogen": 1.2209,
+    "Phosphorus": 1.5882,
+    "Potassium": 0.8275,
+    "Soil Type": 0.0067,
+    "Crop Type": 0.0
+  },
+  "npk_signatures_by_fertilizer": {
+    "10-26-26": {
+      "count": 7,
+      "Nitrogen": {
+        "min": 4,
+        "mean": 7.6,
+        "max": 13
+      },
+      "Phosphorus": {
+        "min": 15,
+        "mean": 17.7,
+        "max": 21
+      },
+      "Potassium": {
+        "min": 16,
+        "mean": 17.7,
+        "max": 19
+      }
+    },
+    "14-35-14": {
+      "count": 14,
+      "Nitrogen": {
+        "min": 5,
+        "mean": 8.2,
+        "max": 10
+      },
+      "Phosphorus": {
+        "min": 22,
+        "mean": 29.6,
+        "max": 33
+      },
+      "Potassium": {
+        "min": 7,
+        "mean": 8.6,
+        "max": 10
+      }
+    },
+    "17-17-17": {
+      "count": 7,
+      "Nitrogen": {
+        "min": 10,
+        "mean": 12.1,
+        "max": 15
+      },
+      "Phosphorus": {
+        "min": 11,
+        "mean": 13.1,
+        "max": 15
+      },
+      "Potassium": {
+        "min": 10,
+        "mean": 13.0,
+        "max": 15
+      }
+    },
+    "20-20": {
+      "count": 14,
+      "Nitrogen": {
+        "min": 8,
+        "mean": 11.2,
+        "max": 14
+      },
+      "Phosphorus": {
+        "min": 8,
+        "mean": 11.6,
+        "max": 15
+      },
+      "Potassium": {
+        "min": 0,
+        "mean": 0.0,
+        "max": 0
+      }
+    },
+    "28-28": {
+      "count": 17,
+      "Nitrogen": {
+        "min": 21,
+        "mean": 22.6,
+        "max": 24
+      },
+      "Phosphorus": {
+        "min": 18,
+        "mean": 21.1,
+        "max": 28
+      },
+      "Potassium": {
+        "min": 0,
+        "mean": 0.0,
+        "max": 0
+      }
+    },
+    "DAP": {
+      "count": 18,
+      "Nitrogen": {
+        "min": 10,
+        "mean": 12.9,
+        "max": 15
+      },
+      "Phosphorus": {
+        "min": 35,
+        "mean": 38.4,
+        "max": 42
+      },
+      "Potassium": {
+        "min": 0,
+        "mean": 0.0,
+        "max": 0
+      }
+    },
+    "Urea": {
+      "count": 22,
+      "Nitrogen": {
+        "min": 35,
+        "mean": 38.4,
+        "max": 42
+      },
+      "Phosphorus": {
+        "min": 0,
+        "mean": 0.0,
+        "max": 0
+      },
+      "Potassium": {
+        "min": 0,
+        "mean": 0.0,
+        "max": 0
+      }
+    }
+  },
+  "alternative_public_datasets_audited_and_rejected": [
+    {
+      "source": "irakozekelly/fertilizer-prediction (100,000 rows, Kaggle)",
+      "reason_rejected": "Empirical audit confirmed pure uniform random synthetic generation: mutual information <= 0.014 across all 8 features; 5-fold CV Random Forest accuracy = 14.43% (+/- 0.54%), worse than majority baseline 14.71%."
+    },
+    {
+      "source": "Tejasgolhar/Fertilizer_Recommendation_System f2.csv (552 rows, GitHub)",
+      "reason_rejected": "Contains 414/552 (75.0%) exact duplicated rows creating severe train/test leakage, one singleton target class (1 sample), inconsistent crop casing ('rice' vs 'Paddy'), and no license declaration."
+    },
+    {
+      "source": "AgriNet Mendeley Dataset (doi:10.17632/c7tr9j78td.1, 257 rows, CC BY 4.0)",
+      "reason_rejected": "Authentic KVK IVRI Bareilly alluvial soil laboratory chemistry table (pH, EC, OC, macro/micro nutrients), but exported CSV contains zero fertilizer recommendation target columns."
+    }
+  ],
+  "domain_scope_and_safety_conclusions": [
+    "SUPPORTS: 7-class fertilizer formulation/grade classification (Urea, DAP, 28-28, 14-35-14, 20-20, 17-17-17, 10-26-26) based strictly on NPK demand ratio.",
+    "DOES NOT SUPPORT: Soil pH acidity/alkalinity correction (no pH column present), crop-specific yield response modeling (Soil Type MI=0.0, Crop Type MI=0.0), or quantitative dosage prediction (kg/ha, g/plant, split rates absent).",
+    "SAFETY INVARIANT: In Fertilizer_Prediction.csv, Urea corresponds to N=35-42, P=0, K=0 (applied nutrient ratio signature), NOT high residual soil nitrogen abundance. Feeding raw high soil-N readings straight into an unguarded classifier would give inverse recommendations. Production inference therefore derives a conservative relative nutrient-deficit target profile from ICAR sufficiency thresholds before invoking ML classification, and overrides conservatively when Soil NPK readings are already optimal/high."
+  ]
+}

@@ -1,0 +1,432 @@
+{
+  "module": "Fertilizer Grade Classification (ML) + ICAR Agronomic Guardrails",
+  "model_version": "phase5b-fert-v1.0.0",
+  "dataset_path": "ml/datasets/raw/Fertilizer_Prediction.csv",
+  "dataset_sha256": "dfd69cee9d3d7a4403aab5647d5749050ae406ad42dc9ce3f508aa3442955e41",
+  "split_strategy": {
+    "method": "Stratified 60 Train / 19 Val / 20 Held-Out Test (+ 5-Fold Stratified CV on Dev=79)",
+    "random_state": 42,
+    "train_rows": 60,
+    "validation_rows": 19,
+    "dev_train_val_rows": 79,
+    "test_rows": 20
+  },
+  "benchmarks": [
+    {
+      "key": "dummy_majority",
+      "algorithm": "DummyClassifier (Majority Class Baseline)",
+      "feature_scope": "npk_only_3",
+      "fit_seconds": 0.08,
+      "train_metrics": {
+        "count": 60,
+        "accuracy": 0.2167,
+        "macro_precision": 0.031,
+        "macro_recall": 0.1429,
+        "macro_f1": 0.0509,
+        "weighted_f1": 0.0772,
+        "log_loss": 28.2342
+      },
+      "validation_metrics": {
+        "count": 19,
+        "accuracy": 0.2105,
+        "macro_precision": 0.0301,
+        "macro_recall": 0.1429,
+        "macro_f1": 0.0497,
+        "weighted_f1": 0.0732,
+        "log_loss": 28.4555
+      },
+      "overfit_gap_accuracy_train_minus_val": 0.0062,
+      "cv5_dev": {
+        "accuracy_mean": 0.2158,
+        "accuracy_std": 0.0351,
+        "macro_f1_mean": 0.0505,
+        "macro_f1_std": 0.0067,
+        "log_loss_mean": 28.2642
+      }
+    },
+    {
+      "key": "logistic_regression_all8",
+      "algorithm": "Logistic Regression (All 8 CSV Features)",
+      "feature_scope": "all_8_features",
+      "fit_seconds": 0.046,
+      "train_metrics": {
+        "count": 60,
+        "accuracy": 1.0,
+        "macro_precision": 1.0,
+        "macro_recall": 1.0,
+        "macro_f1": 1.0,
+        "weighted_f1": 1.0,
+        "log_loss": 0.1831
+      },
+      "validation_metrics": {
+        "count": 19,
+        "accuracy": 0.9474,
+        "macro_precision": 0.9286,
+        "macro_recall": 0.9286,
+        "macro_f1": 0.9048,
+        "weighted_f1": 0.9474,
+        "log_loss": 0.2997
+      },
+      "overfit_gap_accuracy_train_minus_val": 0.0526,
+      "cv5_dev": {
+        "accuracy_mean": 0.9367,
+        "accuracy_std": 0.0559,
+        "macro_f1_mean": 0.8714,
+        "macro_f1_std": 0.1061,
+        "log_loss_mean": 0.3733
+      }
+    },
+    {
+      "key": "decision_tree_all8",
+      "algorithm": "Decision Tree (max_depth=6, All 8 Features)",
+      "feature_scope": "all_8_features",
+      "fit_seconds": 0.067,
+      "train_metrics": {
+        "count": 60,
+        "accuracy": 1.0,
+        "macro_precision": 1.0,
+        "macro_recall": 1.0,
+        "macro_f1": 1.0,
+        "weighted_f1": 1.0,
+        "log_loss": 0.0
+      },
+      "validation_metrics": {
+        "count": 19,
+        "accuracy": 1.0,
+        "macro_precision": 1.0,
+        "macro_recall": 1.0,
+        "macro_f1": 1.0,
+        "weighted_f1": 1.0,
+        "log_loss": 0.0
+      },
+      "overfit_gap_accuracy_train_minus_val": 0.0,
+      "cv5_dev": {
+        "accuracy_mean": 0.9367,
+        "accuracy_std": 0.0396,
+        "macro_f1_mean": 0.8657,
+        "macro_f1_std": 0.0781,
+        "log_loss_mean": 2.2828
+      }
+    },
+    {
+      "key": "random_forest_all8",
+      "algorithm": "Random Forest (All 8 CSV Features)",
+      "feature_scope": "all_8_features",
+      "fit_seconds": 0.758,
+      "train_metrics": {
+        "count": 60,
+        "accuracy": 1.0,
+        "macro_precision": 1.0,
+        "macro_recall": 1.0,
+        "macro_f1": 1.0,
+        "weighted_f1": 1.0,
+        "log_loss": 0.4013
+      },
+      "validation_metrics": {
+        "count": 19,
+        "accuracy": 0.9474,
+        "macro_precision": 0.9643,
+        "macro_recall": 0.9286,
+        "macro_f1": 0.932,
+        "weighted_f1": 0.9424,
+        "log_loss": 0.6668
+      },
+      "overfit_gap_accuracy_train_minus_val": 0.0526,
+      "cv5_dev": {
+        "accuracy_mean": 0.9492,
+        "accuracy_std": 0.047,
+        "macro_f1_mean": 0.9257,
+        "macro_f1_std": 0.0661,
+        "log_loss_mean": 0.6515
+      }
+    },
+    {
+      "key": "random_forest_collectable5",
+      "algorithm": "Random Forest (5 Collectable UI Features: N, P, K, Soil, Crop)",
+      "feature_scope": "collectable_5_features",
+      "fit_seconds": 0.639,
+      "train_metrics": {
+        "count": 60,
+        "accuracy": 1.0,
+        "macro_precision": 1.0,
+        "macro_recall": 1.0,
+        "macro_f1": 1.0,
+        "weighted_f1": 1.0,
+        "log_loss": 0.3734
+      },
+      "validation_metrics": {
+        "count": 19,
+        "accuracy": 1.0,
+        "macro_precision": 1.0,
+        "macro_recall": 1.0,
+        "macro_f1": 1.0,
+        "weighted_f1": 1.0,
+        "log_loss": 0.5159
+      },
+      "overfit_gap_accuracy_train_minus_val": 0.0,
+      "cv5_dev": {
+        "accuracy_mean": 0.9742,
+        "accuracy_std": 0.0317,
+        "macro_f1_mean": 0.9467,
+        "macro_f1_std": 0.0696,
+        "log_loss_mean": 0.4974
+      }
+    },
+    {
+      "key": "logistic_regression_npk3",
+      "algorithm": "Logistic Regression (Parsimonious 3 NPK Grade Features)",
+      "feature_scope": "npk_only_3",
+      "fit_seconds": 0.029,
+      "train_metrics": {
+        "count": 60,
+        "accuracy": 1.0,
+        "macro_precision": 1.0,
+        "macro_recall": 1.0,
+        "macro_f1": 1.0,
+        "weighted_f1": 1.0,
+        "log_loss": 0.1353
+      },
+      "validation_metrics": {
+        "count": 19,
+        "accuracy": 1.0,
+        "macro_precision": 1.0,
+        "macro_recall": 1.0,
+        "macro_f1": 1.0,
+        "weighted_f1": 1.0,
+        "log_loss": 0.1638
+      },
+      "overfit_gap_accuracy_train_minus_val": 0.0,
+      "cv5_dev": {
+        "accuracy_mean": 1.0,
+        "accuracy_std": 0.0,
+        "macro_f1_mean": 1.0,
+        "macro_f1_std": 0.0,
+        "log_loss_mean": 0.1417
+      }
+    },
+    {
+      "key": "random_forest_npk3",
+      "algorithm": "Random Forest (Parsimonious 3 NPK Grade Features)",
+      "feature_scope": "npk_only_3",
+      "fit_seconds": 0.872,
+      "train_metrics": {
+        "count": 60,
+        "accuracy": 1.0,
+        "macro_precision": 1.0,
+        "macro_recall": 1.0,
+        "macro_f1": 1.0,
+        "weighted_f1": 1.0,
+        "log_loss": 0.0791
+      },
+      "validation_metrics": {
+        "count": 19,
+        "accuracy": 1.0,
+        "macro_precision": 1.0,
+        "macro_recall": 1.0,
+        "macro_f1": 1.0,
+        "weighted_f1": 1.0,
+        "log_loss": 0.1008
+      },
+      "overfit_gap_accuracy_train_minus_val": 0.0,
+      "cv5_dev": {
+        "accuracy_mean": 0.9875,
+        "accuracy_std": 0.025,
+        "macro_f1_mean": 0.981,
+        "macro_f1_std": 0.0381,
+        "log_loss_mean": 0.1072
+      }
+    },
+    {
+      "key": "xgboost_npk3",
+      "algorithm": "XGBoost Classifier (Parsimonious 3 NPK Grade Features)",
+      "feature_scope": "npk_only_3",
+      "fit_seconds": 0.429,
+      "train_metrics": {
+        "count": 60,
+        "accuracy": 1.0,
+        "macro_precision": 1.0,
+        "macro_recall": 1.0,
+        "macro_f1": 1.0,
+        "weighted_f1": 1.0,
+        "log_loss": 0.0801
+      },
+      "validation_metrics": {
+        "count": 19,
+        "accuracy": 0.9474,
+        "macro_precision": 0.8095,
+        "macro_recall": 0.8571,
+        "macro_f1": 0.8286,
+        "weighted_f1": 0.9263,
+        "log_loss": 0.151
+      },
+      "overfit_gap_accuracy_train_minus_val": 0.0526,
+      "cv5_dev": {
+        "accuracy_mean": 0.9742,
+        "accuracy_std": 0.0317,
+        "macro_f1_mean": 0.9276,
+        "macro_f1_std": 0.0889,
+        "log_loss_mean": 0.1822
+      }
+    }
+  ],
+  "selected_model_key": "logistic_regression_npk3",
+  "selected_algorithm": "Logistic Regression (Parsimonious 3 NPK Grade Features)",
+  "selected_feature_columns": [
+    "Nitrogen",
+    "Phosphorus",
+    "Potassium"
+  ],
+  "selected_cv5_dev": {
+    "accuracy_mean": 1.0,
+    "accuracy_std": 0.0,
+    "macro_f1_mean": 1.0,
+    "macro_f1_std": 0.0,
+    "log_loss_mean": 0.1417
+  },
+  "selected_dev_metrics": {
+    "count": 79,
+    "accuracy": 1.0,
+    "macro_precision": 1.0,
+    "macro_recall": 1.0,
+    "macro_f1": 1.0,
+    "weighted_f1": 1.0,
+    "log_loss": 0.114
+  },
+  "selected_test_metrics": {
+    "count": 20,
+    "accuracy": 1.0,
+    "macro_precision": 1.0,
+    "macro_recall": 1.0,
+    "macro_f1": 1.0,
+    "weighted_f1": 1.0,
+    "log_loss": 0.1389
+  },
+  "per_class_test_metrics": {
+    "10-26-26": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 1
+    },
+    "14-35-14": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 3
+    },
+    "17-17-17": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 1
+    },
+    "20-20": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 3
+    },
+    "28-28": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 3
+    },
+    "DAP": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 4
+    },
+    "Urea": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 5
+    }
+  },
+  "confusion_matrix_labels": [
+    "10-26-26",
+    "14-35-14",
+    "17-17-17",
+    "20-20",
+    "28-28",
+    "DAP",
+    "Urea"
+  ],
+  "confusion_matrix": [
+    [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      3,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      3,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      3,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      4,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      5
+    ]
+  ],
+  "artifact": {
+    "path": "ml/saved_models/fertilizer_model.joblib",
+    "size_bytes": 1665,
+    "size_mb": 0.0016
+  },
+  "agronomic_safety_and_limitations": [
+    "Fertilizer_Prediction.csv contains 99 observations across 7 formulation classes and does NOT contain soil pH, crop yield trials, or dosage quantities (kg/ha).",
+    "Feature ablation confirmed that zero-MI uncollected variables (Temperature, Humidity, Moisture, Soil Type, Crop Type) add dimensionality without out-of-sample gain.",
+    "Production service separates dataset-backed formulation grade classification from ICAR soil-sufficiency + pH agronomic rules and strictly refuses to invent chemical application dosages, advising KVK / Soil Health Card lab verification."
+  ]
+}

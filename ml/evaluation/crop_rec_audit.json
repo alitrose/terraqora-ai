@@ -1,0 +1,476 @@
+{
+  "dataset_path": "ml/datasets/raw/Crop_recommendation.csv",
+  "sha256": "54a5a6e5408668e668667efc50de2fc867c1b875e0431b4f54dd331b0a109a4e",
+  "shape": {
+    "rows": 2200,
+    "columns": 8
+  },
+  "columns": {
+    "N": "int64",
+    "P": "int64",
+    "K": "int64",
+    "temperature": "float64",
+    "humidity": "float64",
+    "ph": "float64",
+    "rainfall": "float64",
+    "label": "str"
+  },
+  "missing_values": {
+    "N": 0,
+    "P": 0,
+    "K": 0,
+    "temperature": 0,
+    "humidity": 0,
+    "ph": 0,
+    "rainfall": 0,
+    "label": 0
+  },
+  "duplicates": {
+    "exact_rows": 0,
+    "feature_only_duplicates": 0,
+    "conflicting_label_feature_vectors": 0
+  },
+  "whitespace_anomalies_in_label": 0,
+  "class_balance": {
+    "num_classes": 22,
+    "min_samples_per_class": 100,
+    "max_samples_per_class": 100,
+    "counts": {
+      "apple": 100,
+      "banana": 100,
+      "blackgram": 100,
+      "chickpea": 100,
+      "coconut": 100,
+      "coffee": 100,
+      "cotton": 100,
+      "grapes": 100,
+      "jute": 100,
+      "kidneybeans": 100,
+      "lentil": 100,
+      "maize": 100,
+      "mango": 100,
+      "mothbeans": 100,
+      "mungbean": 100,
+      "muskmelon": 100,
+      "orange": 100,
+      "papaya": 100,
+      "pigeonpeas": 100,
+      "pomegranate": 100,
+      "rice": 100,
+      "watermelon": 100
+    }
+  },
+  "feature_distributions": {
+    "N": {
+      "min": 0.0,
+      "p5": 4.0,
+      "p25": 21.0,
+      "median": 37.0,
+      "mean": 50.5518,
+      "p75": 84.25,
+      "p95": 116.0,
+      "max": 140.0,
+      "std": 36.9173
+    },
+    "P": {
+      "min": 5.0,
+      "p5": 10.0,
+      "p25": 28.0,
+      "median": 51.0,
+      "mean": 53.3627,
+      "p75": 68.0,
+      "p95": 133.0,
+      "max": 145.0,
+      "std": 32.9859
+    },
+    "K": {
+      "min": 5.0,
+      "p5": 15.0,
+      "p25": 20.0,
+      "median": 32.0,
+      "mean": 48.1491,
+      "p75": 49.0,
+      "p95": 199.0,
+      "max": 205.0,
+      "std": 50.6479
+    },
+    "temperature": {
+      "min": 8.8257,
+      "p5": 17.9151,
+      "p25": 22.7694,
+      "median": 25.5987,
+      "mean": 25.6162,
+      "p75": 28.5617,
+      "p95": 34.0566,
+      "max": 43.6755,
+      "std": 5.0637
+    },
+    "humidity": {
+      "min": 14.258,
+      "p5": 19.3749,
+      "p25": 60.262,
+      "median": 80.4731,
+      "mean": 71.4818,
+      "p75": 89.9488,
+      "p95": 94.3688,
+      "max": 99.9819,
+      "std": 22.2638
+    },
+    "ph": {
+      "min": 3.5048,
+      "p5": 5.4351,
+      "p25": 5.9717,
+      "median": 6.425,
+      "mean": 6.4695,
+      "p75": 6.9236,
+      "p95": 7.7484,
+      "max": 9.9351,
+      "std": 0.7739
+    },
+    "rainfall": {
+      "min": 20.2113,
+      "p5": 33.8235,
+      "p25": 64.5517,
+      "median": 94.8676,
+      "mean": 103.4637,
+      "p75": 124.2675,
+      "p95": 209.5424,
+      "max": 298.5601,
+      "std": 54.9584
+    }
+  },
+  "iqr_outlier_counts": {
+    "N": 0,
+    "P": 138,
+    "K": 200,
+    "temperature": 86,
+    "humidity": 30,
+    "ph": 57,
+    "rainfall": 100
+  },
+  "domain_anomalies": {
+    "negative_N": 0,
+    "negative_P": 0,
+    "negative_K": 0,
+    "humidity_out_of_0_100": 0,
+    "ph_out_of_0_14": 0,
+    "negative_rainfall": 0,
+    "non_finite_numeric": 0
+  },
+  "closest_5_crop_centroid_pairs_standardized": [
+    {
+      "crop_a": "muskmelon",
+      "crop_b": "watermelon",
+      "std_euclidean_dist": 0.8543
+    },
+    {
+      "crop_a": "apple",
+      "crop_b": "grapes",
+      "std_euclidean_dist": 0.9562
+    },
+    {
+      "crop_a": "orange",
+      "crop_b": "pomegranate",
+      "std_euclidean_dist": 0.991
+    },
+    {
+      "crop_a": "lentil",
+      "crop_b": "mothbeans",
+      "std_euclidean_dist": 1.1024
+    },
+    {
+      "crop_a": "blackgram",
+      "crop_b": "mothbeans",
+      "std_euclidean_dist": 1.122
+    }
+  ],
+  "farthest_3_crop_centroid_pairs_standardized": [
+    {
+      "crop_a": "apple",
+      "crop_b": "muskmelon",
+      "std_euclidean_dist": 5.491
+    },
+    {
+      "crop_a": "coffee",
+      "crop_b": "grapes",
+      "std_euclidean_dist": 5.5137
+    },
+    {
+      "crop_a": "apple",
+      "crop_b": "coffee",
+      "std_euclidean_dist": 5.5441
+    }
+  ],
+  "feature_correlations": {
+    "N": {
+      "N": 1.0,
+      "P": -0.2315,
+      "K": -0.1405,
+      "temperature": 0.0265,
+      "humidity": 0.1907,
+      "ph": 0.0967,
+      "rainfall": 0.059
+    },
+    "P": {
+      "N": -0.2315,
+      "P": 1.0,
+      "K": 0.7362,
+      "temperature": -0.1275,
+      "humidity": -0.1187,
+      "ph": -0.138,
+      "rainfall": -0.0638
+    },
+    "K": {
+      "N": -0.1405,
+      "P": 0.7362,
+      "K": 1.0,
+      "temperature": -0.1604,
+      "humidity": 0.1909,
+      "ph": -0.1695,
+      "rainfall": -0.0535
+    },
+    "temperature": {
+      "N": 0.0265,
+      "P": -0.1275,
+      "K": -0.1604,
+      "temperature": 1.0,
+      "humidity": 0.2053,
+      "ph": -0.0178,
+      "rainfall": -0.0301
+    },
+    "humidity": {
+      "N": 0.1907,
+      "P": -0.1187,
+      "K": 0.1909,
+      "temperature": 0.2053,
+      "humidity": 1.0,
+      "ph": -0.0085,
+      "rainfall": 0.0944
+    },
+    "ph": {
+      "N": 0.0967,
+      "P": -0.138,
+      "K": -0.1695,
+      "temperature": -0.0178,
+      "humidity": -0.0085,
+      "ph": 1.0,
+      "rainfall": -0.1091
+    },
+    "rainfall": {
+      "N": 0.059,
+      "P": -0.0638,
+      "K": -0.0535,
+      "temperature": -0.0301,
+      "humidity": 0.0944,
+      "ph": -0.1091,
+      "rainfall": 1.0
+    }
+  },
+  "per_crop_feature_means": {
+    "apple": {
+      "N": 20.8,
+      "P": 134.22,
+      "K": 199.89,
+      "temperature": 22.63,
+      "humidity": 92.33,
+      "ph": 5.93,
+      "rainfall": 112.65
+    },
+    "banana": {
+      "N": 100.23,
+      "P": 82.01,
+      "K": 50.05,
+      "temperature": 27.38,
+      "humidity": 80.36,
+      "ph": 5.98,
+      "rainfall": 104.63
+    },
+    "blackgram": {
+      "N": 40.02,
+      "P": 67.47,
+      "K": 19.24,
+      "temperature": 29.97,
+      "humidity": 65.12,
+      "ph": 7.13,
+      "rainfall": 67.88
+    },
+    "chickpea": {
+      "N": 40.09,
+      "P": 67.79,
+      "K": 79.92,
+      "temperature": 18.87,
+      "humidity": 16.86,
+      "ph": 7.34,
+      "rainfall": 80.06
+    },
+    "coconut": {
+      "N": 21.98,
+      "P": 16.93,
+      "K": 30.59,
+      "temperature": 27.41,
+      "humidity": 94.84,
+      "ph": 5.98,
+      "rainfall": 175.69
+    },
+    "coffee": {
+      "N": 101.2,
+      "P": 28.74,
+      "K": 29.94,
+      "temperature": 25.54,
+      "humidity": 58.87,
+      "ph": 6.79,
+      "rainfall": 158.07
+    },
+    "cotton": {
+      "N": 117.77,
+      "P": 46.24,
+      "K": 19.56,
+      "temperature": 23.99,
+      "humidity": 79.84,
+      "ph": 6.91,
+      "rainfall": 80.4
+    },
+    "grapes": {
+      "N": 23.18,
+      "P": 132.53,
+      "K": 200.11,
+      "temperature": 23.85,
+      "humidity": 81.88,
+      "ph": 6.03,
+      "rainfall": 69.61
+    },
+    "jute": {
+      "N": 78.4,
+      "P": 46.86,
+      "K": 39.99,
+      "temperature": 24.96,
+      "humidity": 79.64,
+      "ph": 6.73,
+      "rainfall": 174.79
+    },
+    "kidneybeans": {
+      "N": 20.75,
+      "P": 67.54,
+      "K": 20.05,
+      "temperature": 20.12,
+      "humidity": 21.61,
+      "ph": 5.75,
+      "rainfall": 105.92
+    },
+    "lentil": {
+      "N": 18.77,
+      "P": 68.36,
+      "K": 19.41,
+      "temperature": 24.51,
+      "humidity": 64.8,
+      "ph": 6.93,
+      "rainfall": 45.68
+    },
+    "maize": {
+      "N": 77.76,
+      "P": 48.44,
+      "K": 19.79,
+      "temperature": 22.39,
+      "humidity": 65.09,
+      "ph": 6.25,
+      "rainfall": 84.77
+    },
+    "mango": {
+      "N": 20.07,
+      "P": 27.18,
+      "K": 29.92,
+      "temperature": 31.21,
+      "humidity": 50.16,
+      "ph": 5.77,
+      "rainfall": 94.7
+    },
+    "mothbeans": {
+      "N": 21.44,
+      "P": 48.01,
+      "K": 20.23,
+      "temperature": 28.19,
+      "humidity": 53.16,
+      "ph": 6.83,
+      "rainfall": 51.2
+    },
+    "mungbean": {
+      "N": 20.99,
+      "P": 47.28,
+      "K": 19.87,
+      "temperature": 28.53,
+      "humidity": 85.5,
+      "ph": 6.72,
+      "rainfall": 48.4
+    },
+    "muskmelon": {
+      "N": 100.32,
+      "P": 17.72,
+      "K": 50.08,
+      "temperature": 28.66,
+      "humidity": 92.34,
+      "ph": 6.36,
+      "rainfall": 24.69
+    },
+    "orange": {
+      "N": 19.58,
+      "P": 16.55,
+      "K": 10.01,
+      "temperature": 22.77,
+      "humidity": 92.17,
+      "ph": 7.02,
+      "rainfall": 110.47
+    },
+    "papaya": {
+      "N": 49.88,
+      "P": 59.05,
+      "K": 50.04,
+      "temperature": 33.72,
+      "humidity": 92.4,
+      "ph": 6.74,
+      "rainfall": 142.63
+    },
+    "pigeonpeas": {
+      "N": 20.73,
+      "P": 67.73,
+      "K": 20.29,
+      "temperature": 27.74,
+      "humidity": 48.06,
+      "ph": 5.79,
+      "rainfall": 149.46
+    },
+    "pomegranate": {
+      "N": 18.87,
+      "P": 18.75,
+      "K": 40.21,
+      "temperature": 21.84,
+      "humidity": 90.13,
+      "ph": 6.43,
+      "rainfall": 107.53
+    },
+    "rice": {
+      "N": 79.89,
+      "P": 47.58,
+      "K": 39.87,
+      "temperature": 23.69,
+      "humidity": 82.27,
+      "ph": 6.43,
+      "rainfall": 236.18
+    },
+    "watermelon": {
+      "N": 99.42,
+      "P": 17.0,
+      "K": 50.22,
+      "temperature": 25.59,
+      "humidity": 85.16,
+      "ph": 6.5,
+      "rainfall": 50.79
+    }
+  },
+  "leakage_and_quality_notes": [
+    "Zero missing values and zero exact or feature-level duplicates across 2,200 observations.",
+    "All 22 crop classes have exactly 100 samples each (perfectly balanced benchmark dataset).",
+    "No temporal, spatial ID, or target-derived proxy columns exist; all 7 inputs are observable soil/climate metrics.",
+    "Note: Season and Region/State from the frontend UI are NOT present in Crop_recommendation.csv; ML classification must rely solely on the 7 verified soil/climate inputs.",
+    "Expect strong class separability in tree/boosting ensembles, with remaining edge-case boundary confusion concentrated among closely related pulses (e.g., lentil/blackgram/mungbean) and high-humidity crops (rice/jute/papaya)."
+  ]
+}

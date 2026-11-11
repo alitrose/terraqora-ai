@@ -1,6 +1,6 @@
-# TerraQora AI — FastAPI Backend (Phases 4–5)
+# TerraQora AI — FastAPI Backend (Phases 4–5B)
 
-Modular FastAPI backend built on SQLAlchemy 2.0, Alembic migrations, PostgreSQL (with SQLite local dev/test support), Pydantic v2 validation, bcrypt password hashing, JWT authentication, Farmer/Admin RBAC, and live Phase 5 leak-free Crop Yield ML inference.
+Modular FastAPI backend built on SQLAlchemy 2.0, Alembic migrations, PostgreSQL (with SQLite local dev/test support), Pydantic v2 validation, bcrypt password hashing, JWT authentication, Farmer/Admin RBAC, live Phase 5 leak-free Crop Yield ML inference, and Phase 5B Crop & Fertilizer Recommendation ML inference.
 
 ---
 
@@ -17,28 +17,31 @@ backend/
 ├── requirements.txt
 └── app/
     ├── __init__.py
-    ├── main.py                  # FastAPI app, CORS, rate limiting, error handlers, /health
+    ├── main.py                     # FastAPI app, CORS, rate limiting, error handlers, /health
     ├── api/
-    │   ├── deps.py              # Bearer JWT auth & require_roles(...) RBAC dependencies
+    │   ├── deps.py                 # Bearer JWT auth & require_roles(...) RBAC dependencies
     │   └── v1/
-    │       ├── router.py        # /api/v1 router + /api/v1/health
-    │       ├── auth.py          # /auth/register, /auth/login, /auth/me
-    │       ├── profile.py       # /profile (GET, PUT)
-    │       ├── farms.py         # /farms CRUD (GET list, POST, GET/{id}, PUT/{id}, PATCH/{id}, DELETE/{id})
-    │       ├── predictions.py   # Phase 5: POST /predictions/yield & GET /predictions/yield/history
-    │       └── admin.py         # /admin/overview (incl. live ML registry), /admin/users, PATCH /admin/users/{id}
+    │       ├── router.py           # /api/v1 router + /api/v1/health
+    │       ├── auth.py             # /auth/register, /auth/login, /auth/me
+    │       ├── profile.py          # /profile (GET, PUT)
+    │       ├── farms.py            # /farms CRUD (GET list, POST, GET/{id}, PUT/{id}, PATCH/{id}, DELETE/{id})
+    │       ├── predictions.py      # Phase 5: POST /predictions/yield & GET /predictions/yield/history
+    │       ├── recommendations.py  # Phase 5B: /recommendations/crop (+ /history) & /recommendations/fertilizer (+ /history)
+    │       └── admin.py            # /admin/overview (incl. live ML registry), /admin/users, PATCH /admin/users/{id}
     ├── core/
-    │   ├── config.py            # Environment settings & production security guardrails
+    │   ├── config.py               # Environment settings & production security guardrails
     │   ├── logging_config.py
-    │   ├── rate_limit.py        # SlowAPI rate limiter
-    │   └── security.py          # bcrypt hashing + PyJWT access tokens
+    │   ├── rate_limit.py           # SlowAPI rate limiter
+    │   └── security.py             # bcrypt hashing + PyJWT access tokens
     ├── db/
     │   ├── base.py
-    │   └── session.py           # Engine builder (PostgreSQL pool_pre_ping / SQLite FK enforcement)
-    ├── models/                  # All 11 Phase 2 SQLAlchemy 2.0 ORM tables
-    ├── schemas/                 # Pydantic v2 request/response schemas (incl. leak-free CropYieldRequest)
+    │   └── session.py              # Engine builder (PostgreSQL pool_pre_ping / SQLite FK enforcement)
+    ├── models/                     # All 11 Phase 2 SQLAlchemy 2.0 ORM tables
+    ├── schemas/                    # Pydantic v2 schemas (auth, farm, predictions, recommendations, admin)
     └── services/
-        └── crop_yield_service.py # Thread-safe lazy .joblib loader, local driver attribution & DB persistence
+        ├── crop_yield_service.py   # Phase 5 Crop Yield ML loader, TreeSHAP drivers & DB persistence
+        ├── crop_rec_service.py     # Phase 5B Crop Recommendation ML loader & DB persistence
+        └── fertilizer_service.py   # Phase 5B Fertilizer grade classifier + ICAR guardrails & persistence
 ```
 
 ---
@@ -54,9 +57,11 @@ backend/
    .\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
    ```
 
-2. **Generate the Phase 5 Crop Yield model artifact** (required once after fresh clone because `*.joblib` binaries are gitignored):
+2. **Generate all Phase 5 & 5B ML model artifacts** (required once after fresh clone because `*.joblib` binaries are gitignored):
    ```powershell
    .\.venv\Scripts\python.exe -m ml.training.train_crop_yield
+   .\.venv\Scripts\python.exe -m ml.training.train_crop_recommendation
+   .\.venv\Scripts\python.exe -m ml.training.train_fertilizer
    ```
 
 3. **Configure `.env`** (never commit `.env`):

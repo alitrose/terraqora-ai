@@ -5,7 +5,7 @@ Authentication: `Authorization: Bearer <access_token>` (JWT).
 TypeScript types matching these contracts live in [api.ts](../frontend/src/types/api.ts), PostgreSQL DDL lives in [schema.sql](../database/schema.sql), and Phase 4 FastAPI routes live in [backend/app/api/v1/](../backend/app/api/v1/router.py).
 
 > [!NOTE]
-> Live endpoints currently active: Phase 4 (`/health`, `/auth/*`, `/profile`, `/farms/*`, `/admin/*`) and Phase 5 (`/predictions/yield`, `/predictions/yield/history`) authenticate, infer, and persist directly against the FastAPI + SQLAlchemy backend. When using Instant UI Preview Sandbox or when the backend is offline (`status = 0`), or when querying unimplemented Phase 5b–8 endpoints (`404`/`501`) in `auto` mode, [services.ts](../frontend/src/api/services.ts) falls back cleanly to `demo_preview`. Live validation (`422`), authorization (`401`/`403`), and missing-model (`503`) responses from `/predictions/yield` always surface directly to the user rather than falling back silently to preview numbers. Setting `localStorage.tq_api_mode = "live_only"` disables all fallbacks.
+> Live endpoints currently active: Phase 4 (`/health`, `/auth/*`, `/profile`, `/farms/*`, `/admin/*`), Phase 5 (`/predictions/yield`, `/predictions/yield/history`), and Phase 5b (`/recommendations/crop`, `/recommendations/crop/history`, `/recommendations/fertilizer`, `/recommendations/fertilizer/history`) authenticate, infer, and persist directly against the FastAPI + SQLAlchemy backend. When using Instant UI Preview Sandbox or when the backend is offline (`status = 0`), or when querying unimplemented Phase 6–8 endpoints (`404`/`501`) in `auto` mode, [services.ts](../frontend/src/api/services.ts) falls back cleanly to `demo_preview`. Live validation (`422`), authorization (`401`/`403`), and missing-model (`503`) responses from Phases 5 & 5b endpoints always surface directly to the user rather than falling back silently to preview numbers. Setting `localStorage.tq_api_mode = "live_only"` disables all fallbacks.
 
 ---
 
@@ -72,15 +72,21 @@ Validation rules:
 - **Response (`DiseaseDetectionResponse`)**: `{ id, image_filename, predicted_label, crop_name, disease_name, is_healthy, confidence, is_uncertain, uncertainty_reason, top_predictions[], treatment_summary, prevention_notes, model_version, created_at, source_mode }`
 - Guardrail: Predictions with `confidence < 0.65` set `is_uncertain: true` and return an actionable photography/expert consultation warning.
 
-### 3.3 Smart Fertilizer Recommendation
-- `POST /recommendations/fertilizer` (Bearer)
-- **Request (`FertilizerRequest`)**: `{ farm_id?, nitrogen, phosphorus, potassium, soil_ph, soil_type, crop_type, location }`
-- **Response (`FertilizerResponse`)**: `{ id, recommended_fertilizer, confidence, nutrient_levels[], ph_assessment, advisory_notes, expert_disclaimer, model_version, created_at, source_mode }`
+### 3.3 Smart Fertilizer Recommendation (**Phase 5b Live**)
+- `POST /recommendations/fertilizer` (Bearer, rate limit `20/minute`)
+- `GET /recommendations/fertilizer/history?limit=10` (Bearer — returns current farmer's saved assessments newest first)
+- **Request (`FertilizerRequest`, `extra="forbid"`)**: `{ farm_id?, nitrogen, phosphorus, potassium, soil_ph, soil_type, crop_type, location? }`
+- **Guardrails**:
+  - Evaluates ICAR soil sufficiency (`N: 40–95`, `P: 30–65`, `K: 30–75`) and `pH` (`< 5.8` / `> 7.8` qualitative guidance) prior to ML inference. When all N/P/K readings meet sufficiency thresholds, returns `recommendation_mode = "agronomic_sufficiency_guardrail"` (`ml_predicted_grade = null`) without pushing chemical fertilizers.
+  - Otherwise projects proportional deficits onto the 3-NPK classifier (`Urea`, `DAP`, `28-28`, `14-35-14`, `20-20`, `17-17-17`, `10-26-26`), discloses out-of-domain crop/soil mappings and absent straight MOP (`0-0-60`), and **strictly never invents chemical dosages (`kg/ha` or `g/plant`)**.
+- **Response (`FertilizerResponse`)**: `{ id, farm_id?, nitrogen, phosphorus, potassium, soil_ph, soil_type, crop_type, location?, recommended_fertilizer, confidence, ml_predicted_grade?, recommendation_mode, dataset_coverage_note, nutrient_levels[], ph_assessment, advisory_notes, expert_disclaimer, model_version, created_at, source_mode }`
 
-### 3.4 Crop Recommendation (22 Crops)
-- `POST /recommendations/crop` (Bearer)
-- **Request (`CropRecommendationRequest`)**: `{ farm_id?, nitrogen, phosphorus, potassium, temperature_c, humidity_pct, soil_ph, rainfall_mm, season, region }`
-- **Response (`CropRecommendationResponse`)**: `{ id, recommended_crop, top_candidates[], soil_climate_summary, model_version, created_at, source_mode }`
+### 3.4 Crop Recommendation (22 Crops — **Phase 5b Live**)
+- `POST /recommendations/crop` (Bearer, rate limit `20/minute`)
+- `GET /recommendations/crop/history?limit=10` (Bearer — returns current farmer's saved suitability runs newest first)
+- **Request (`CropRecommendationRequest`, `extra="forbid"`)**: `{ farm_id?, nitrogen, phosphorus, potassium, temperature_c, humidity_pct, soil_ph, rainfall_mm, season?, region? }`
+- **Guardrails**: Probabilities are ranked strictly from the 7 validated soil & climate features in `Crop_recommendation.csv`; optional `season`/`region` are recorded as agronomic context only. Verifies optional `farm_id` ownership (`404`/`403`) and fails closed (`503`) if `.joblib` is unavailable.
+- **Response (`CropRecommendationResponse`)**: `{ id, farm_id?, nitrogen, phosphorus, potassium, temperature_c, humidity_pct, soil_ph, rainfall_mm, season?, region?, recommended_crop, top_candidates[], soil_climate_summary, model_version, created_at, source_mode }`. See [RECOMMENDATION_ML.md](RECOMMENDATION_ML.md).
 
 ---
 

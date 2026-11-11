@@ -142,19 +142,40 @@ describe('TerraQora AI — Phase 3 Frontend Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('computes Smart Fertilizer Plan and Crop Recommendation suitability results', async () => {
+  it('computes Smart Fertilizer Plan (with sufficiency guardrail & farm link) and Crop Recommendation suitability results', async () => {
     renderAt('/auth');
     const user = await signInAsDemoFarmer();
 
     await user.click(screen.getByRole('link', { name: /Smart Fertilizer/i }));
-    await user.click(await screen.findByRole('button', { name: /Recommend Fertilizer/i }));
+    expect(await screen.findByText(/Zero Fabricated Dosages Policy/i)).toBeInTheDocument();
+
+    const fertFarmSelect = await screen.findByLabelText(/Link Saved Farm Plot/i);
+    await user.selectOptions(fertFarmSelect, 'farm-cauvery-02');
+    expect((screen.getByLabelText(/Soil Type/i) as HTMLSelectElement).value).toBe('Alluvial');
+
+    await user.click(screen.getByRole('button', { name: /Recommend Fertilizer/i }));
     expect(await screen.findByText(/Recommended Formulation/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Recent Fertilizer Plans/i)).toBeInTheDocument();
+
+    // Sufficiency guardrail check when all N, P, K meet thresholds
+    fireEvent.change(screen.getByLabelText(/Nitrogen \(N/i), { target: { value: '75' } });
+    fireEvent.change(screen.getByLabelText(/Phosphorus \(P/i), { target: { value: '50' } });
+    fireEvent.change(screen.getByLabelText(/Potassium \(K/i), { target: { value: '55' } });
+    await user.click(screen.getByRole('button', { name: /Recommend Fertilizer/i }));
+    expect(
+      await screen.findByText(/ICAR Sufficiency Guardrail Active/i)
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole('link', { name: /Crop Suitability/i }));
-    await user.click(
-      await screen.findByRole('button', { name: /Find Best Suitable Crops/i })
-    );
+    expect(await screen.findByText(/Dataset Feature Scope/i)).toBeInTheDocument();
+
+    const cropFarmSelect = await screen.findByLabelText(/Link Saved Farm Plot/i);
+    await user.selectOptions(cropFarmSelect, 'farm-pollachi-01');
+    expect(Number((screen.getByLabelText(/Soil pH/i) as HTMLInputElement).value)).toBe(6.4);
+
+    await user.click(screen.getByRole('button', { name: /Find Best Suitable Crops/i }));
     expect(await screen.findByText(/Primary Crop Match/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Recent Crop Suitability Matches/i)).toBeInTheDocument();
   });
 
   it('renders Weather & Irrigation page with explicit non-sensor weather notice', async () => {

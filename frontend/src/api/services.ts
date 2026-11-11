@@ -186,23 +186,37 @@ export const mlService = {
     ),
 
   recommendFertilizer: (payload: FertilizerRequest) =>
-    withPhasePendingFallback<FertilizerResponse>(
+    withFallback<FertilizerResponse>(
       () =>
         apiRequest<FertilizerResponse>('/recommendations/fertilizer', {
           method: 'POST',
           body: JSON.stringify(payload),
+          timeoutMs: 12000,
         }),
       () => demoSandbox.recommendFertilizer(payload)
     ),
 
+  getFertilizerHistory: () =>
+    withFallback<FertilizerResponse[]>(
+      () => apiRequest<FertilizerResponse[]>('/recommendations/fertilizer/history?limit=10'),
+      () => demoSandbox.getFertilizerHistory()
+    ),
+
   recommendCrop: (payload: CropRecommendationRequest) =>
-    withPhasePendingFallback<CropRecommendationResponse>(
+    withFallback<CropRecommendationResponse>(
       () =>
         apiRequest<CropRecommendationResponse>('/recommendations/crop', {
           method: 'POST',
           body: JSON.stringify(payload),
+          timeoutMs: 12000,
         }),
       () => demoSandbox.recommendCrop(payload)
+    ),
+
+  getCropRecHistory: () =>
+    withFallback<CropRecommendationResponse[]>(
+      () => apiRequest<CropRecommendationResponse[]>('/recommendations/crop/history?limit=10'),
+      () => demoSandbox.getCropRecHistory()
     ),
 };
 

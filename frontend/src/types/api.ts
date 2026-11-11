@@ -21,6 +21,7 @@ export interface FarmerProfile {
   experience_years: number | null;
   primary_soil_type: string | null;
   preferred_units: 'metric' | 'imperial';
+  preferred_language?: SupportedLanguage;
 }
 
 export interface Farm {
@@ -37,7 +38,11 @@ export interface Farm {
   irrigation_type: 'rainfed' | 'drip' | 'sprinkler' | 'canal' | 'borewell' | 'mixed' | null;
   primary_crop: string | null;
   created_at: string;
+  updated_at?: string;
 }
+
+export type FarmPayload = Omit<Farm, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
+export type FarmUpdatePayload = Partial<FarmPayload>;
 
 export interface AuthSession {
   access_token: string;

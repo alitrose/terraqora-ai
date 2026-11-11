@@ -24,6 +24,10 @@ export function getStoredToken(): string | null {
   }
 }
 
+export function isDemoPreviewToken(token: string | null = getStoredToken()): boolean {
+  return Boolean(token?.startsWith('demo.preview.token.'));
+}
+
 export function setStoredToken(token: string | null): void {
   try {
     if (token) {
@@ -70,7 +74,7 @@ export async function apiRequest<T>(
 
   const mergedHeaders: Record<string, string> = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(token && !isDemoPreviewToken(token) ? { Authorization: `Bearer ${token}` } : {}),
     ...(headers as Record<string, string> | undefined),
   };
 
@@ -83,14 +87,23 @@ export async function apiRequest<T>(
     });
 
     if (!response.ok) {
-      let detail = response.statusText;
+      let detail = response.statusText || `Request failed (${response.status})`;
       try {
         const errJson = await response.json();
-        detail = errJson.detail || errJson.message || detail;
+        if (typeof errJson.detail === 'string' && errJson.detail.trim()) {
+          detail = errJson.detail;
+        } else if (Array.isArray(errJson.detail) && errJson.detail.length > 0) {
+          detail = errJson.detail
+            .map((e: { msg?: string }) => e.msg || '')
+            .filter(Boolean)
+            .join('; ');
+        } else if (typeof errJson.message === 'string' && errJson.message.trim()) {
+          detail = errJson.message;
+        }
       } catch {
         // Non-JSON error body
       }
-      throw new ApiError(`Request failed (${response.status})`, response.status, detail);
+      throw new ApiError(detail, response.status, detail);
     }
 
     if (response.status === 204) {

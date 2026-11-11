@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { getStoredToken, setStoredToken } from '../api/client';
+import { getStoredToken, isDemoPreviewToken, setStoredToken } from '../api/client';
+import { demoSandbox } from '../api/demoSandbox';
 import { authService } from '../api/services';
 import type { LoginPayload, RegisterPayload, SupportedLanguage, User } from '../types/api';
 
@@ -9,6 +10,7 @@ interface AuthContextValue {
   isDemoSession: boolean;
   login: (payload: LoginPayload, demoRoleHint?: 'farmer' | 'admin') => Promise<User>;
   register: (payload: RegisterPayload) => Promise<User>;
+  enterDemoSandbox: (role: 'farmer' | 'admin') => User;
   logout: () => void;
   updateUserLocal: (patch: Partial<User>) => void;
 }
@@ -28,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const token = getStoredToken();
-  const isDemoSession = Boolean(token?.startsWith('demo.preview.token.'));
+  const isDemoSession = isDemoPreviewToken(token);
 
   useEffect(() => {
     let active = true;
@@ -38,7 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (active) setIsLoading(false);
         return;
       }
-      if (existingToken.startsWith('demo.preview.token.') && user) {
+      if (isDemoPreviewToken(existingToken) && user) {
         if (active) setIsLoading(false);
         return;
       }
@@ -86,6 +88,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return session.user;
   };
 
+  const enterDemoSandbox = (role: 'farmer' | 'admin') => {
+    const demoEmail =
+      role === 'admin' ? 'admin@terraqora.demo' : 'ananya.farmer@terraqora.demo';
+    const session = demoSandbox.login(demoEmail, role);
+    persistSession(session.access_token, session.user);
+    return session.user;
+  };
+
   const logout = () => {
     setStoredToken(null);
     try {
@@ -115,7 +125,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, isDemoSession, login, register, logout, updateUserLocal }}
+      value={{
+        user,
+        isLoading,
+        isDemoSession,
+        login,
+        register,
+        enterDemoSandbox,
+        logout,
+        updateUserLocal,
+      }}
     >
       {children}
     </AuthContext.Provider>

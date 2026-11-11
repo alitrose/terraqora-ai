@@ -189,7 +189,7 @@ export const demoSandbox = {
     return [...demoFarms];
   },
 
-  createFarm(payload: Omit<Farm, 'id' | 'user_id' | 'created_at'>): Farm {
+  createFarm(payload: Omit<Farm, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Farm {
     const created: Farm = {
       ...payload,
       id: makeId('farm'),
@@ -198,6 +198,22 @@ export const demoSandbox = {
     };
     demoFarms = [created, ...demoFarms];
     return created;
+  },
+
+  updateFarm(
+    id: string,
+    patch: Partial<Omit<Farm, 'id' | 'user_id' | 'created_at' | 'updated_at'>>
+  ): Farm {
+    let updatedFarm: Farm | undefined;
+    demoFarms = demoFarms.map((f) => {
+      if (f.id !== id) return f;
+      updatedFarm = { ...f, ...patch };
+      return updatedFarm;
+    });
+    if (!updatedFarm) {
+      throw new Error('Farm plot not found.');
+    }
+    return { ...updatedFarm };
   },
 
   deleteFarm(id: string): void {

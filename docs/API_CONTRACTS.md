@@ -2,44 +2,58 @@
 
 Base URL: `VITE_API_BASE_URL` (default `http://localhost:8000/api/v1`).  
 Authentication: `Authorization: Bearer <access_token>` (JWT).  
-TypeScript types matching these contracts live in [api.ts](../frontend/src/types/api.ts), and PostgreSQL persistence tables live in [schema.sql](../database/schema.sql).
+TypeScript types matching these contracts live in [api.ts](../frontend/src/types/api.ts), PostgreSQL DDL lives in [schema.sql](../database/schema.sql), and Phase 4 FastAPI routes live in [backend/app/api/v1/](../backend/app/api/v1/router.py).
 
 > [!NOTE]
-> During Phase 3 frontend verification, when `http://localhost:8000/api/v1` is unreachable (`status = 0`), [services.ts](../frontend/src/api/services.ts) falls back automatically in `auto` mode to synthetic demonstration data flagged with `source_mode: "demo_preview"`. Setting `localStorage.tq_api_mode = "live_only"` disables fallback.
+> Phase 4 live endpoints (`/health`, `/auth/*`, `/profile`, `/farms/*`, `/admin/*`) authenticate and persist directly to the FastAPI + SQLAlchemy backend when running. When using Instant UI Preview Sandbox or when the backend is offline (`status = 0`), or when querying unimplemented Phase 5–7 endpoints (`404`/`501`) in `auto` mode, [services.ts](../frontend/src/api/services.ts) falls back cleanly to `demo_preview`. Setting `localStorage.tq_api_mode = "live_only"` disables all fallbacks.
 
 ---
 
-## 1. Authentication & User Session
+## 0. Health & Readiness (Phase 4 Live)
+
+| Method | Path | Auth | Response (`200`) |
+| --- | --- | --- | --- |
+| `GET` | `/health` (root) | Public | `{ status: "ok", service, version, database: "connected" }` |
+| `GET` | `/api/v1/health` | Public | `{ status: "ok", service, version, database: "connected" }` |
+
+---
+
+## 1. Authentication & User Session (Phase 4 Live)
 
 | Method | Path | Auth | Request Body | Response (`200` / `201`) |
 | --- | --- | --- | --- | --- |
-| `POST` | `/auth/register` | Public | `{ email, password, full_name, preferred_language, state? }` | `AuthSession` (`access_token`, `token_type`, `user`) |
-| `POST` | `/auth/login` | Public | `{ email, password }` | `AuthSession` |
-| `GET` | `/auth/me` | Bearer | — | `User` |
+| `POST` | `/auth/register` | Public | `{ email, password, full_name, preferred_language, state? }` | `AuthSession` (`access_token`, `token_type`, `user`) (`201`) |
+| `POST` | `/auth/login` | Public | `{ email, password }` | `AuthSession` (`200`) |
+| `GET` | `/auth/me` | Bearer | — | `User` (`200`) |
 
 - `preferred_language` enum: `'en' | 'ta' | 'ml' | 'hi' | 'te'`
-- `role` enum: `'farmer' | 'admin'`
+- `role` enum: `'farmer' | 'admin'` (public `/auth/register` always assigns `'farmer'`)
 
 ---
 
-## 2. Profile & Farms CRUD
+## 2. Profile & Farms CRUD (Phase 4 Live)
 
 | Method | Path | Auth | Request Body | Response |
 | --- | --- | --- | --- | --- |
-| `GET` | `/profile` | Bearer | — | `FarmerProfile` |
-| `PUT` | `/profile` | Bearer | `Partial<FarmerProfile>` (`phone`, `state`, `district`, `experience_years`, `primary_soil_type`, `preferred_units`) | `FarmerProfile` |
-| `GET` | `/farms` | Bearer | — | `Farm[]` |
+| `GET` | `/profile` | Bearer | — | `FarmerProfile` (`200`) |
+| `PUT` | `/profile` | Bearer | `Partial<FarmerProfile>` (`phone`, `state`, `district`, `experience_years`, `primary_soil_type`, `preferred_units`, `preferred_language?`) | `FarmerProfile` (`200`) |
+| `GET` | `/farms` | Bearer | — | `Farm[]` (`200`) |
 | `POST` | `/farms` | Bearer | `{ name, state, district?, latitude?, longitude?, area_hectares, soil_type?, soil_ph?, irrigation_type?, primary_crop? }` | `Farm` (`201`) |
-| `DELETE` | `/farms/{farm_id}` | Bearer (owner) | — | `204 No Content` |
+| `GET` | `/farms/{farm_id}` | Bearer (owner / admin) | — | `Farm` (`200`) |
+| `PUT` | `/farms/{farm_id}` | Bearer (owner / admin) | Partial / full `Farm` fields | `Farm` (`200`) |
+| `PATCH` | `/farms/{farm_id}` | Bearer (owner / admin) | Partial `Farm` fields | `Farm` (`200`) |
+| `DELETE` | `/farms/{farm_id}` | Bearer (owner / admin) | — | `204 No Content` |
 
 Validation rules:
-- `area_hectares > 0`
+- `area_hectares > 0` (`<= 100000`)
+- `latitude` in `[-90, 90]`, `longitude` in `[-180, 180]`
 - `soil_ph` in `[0, 14]`
+- `experience_years` in `[0, 90]`
 - `irrigation_type` enum: `'rainfed' | 'drip' | 'sprinkler' | 'canal' | 'borewell' | 'mixed'`
 
 ---
 
-## 3. Machine Learning & Computer Vision Modules
+## 3. Machine Learning & Computer Vision Modules (Phases 5 & 7)
 
 ### 3.1 Crop Yield Prediction (Leak-Free)
 - `POST /predictions/yield` (Bearer)
@@ -66,7 +80,7 @@ Validation rules:
 
 ---
 
-## 4. Weather & Irrigation Advisory
+## 4. Weather & Irrigation Advisory (Phase 7)
 
 - `POST /weather/irrigation` (Bearer)
 - **Request (`WeatherIrrigationRequest`)**: `{ farm_id?, location_name, latitude, longitude, crop_type, growth_stage }`
@@ -75,7 +89,7 @@ Validation rules:
 
 ---
 
-## 5. GenAI Farming Assistant (Multilingual RAG)
+## 5. GenAI Farming Assistant (Multilingual RAG — Phase 6)
 
 | Method | Path | Auth | Request Body | Response |
 | --- | --- | --- | --- | --- |
@@ -87,15 +101,17 @@ Validation rules:
 
 ---
 
-## 6. Dataset Analytics, AI Reports & Admin
+## 6. Admin Telemetry (Phase 4 Live) & Dataset Analytics / AI Reports (Phases 5–8)
 
 | Method | Path | Auth | Notes |
 | --- | --- | --- | --- |
-| `GET` | `/analytics/overview` | Bearer | Query params: `crop`, `state`, `season`, `year_start`, `year_end` → `AnalyticsResponse` |
-| `GET` | `/reports` | Bearer | Returns `GeneratedReport[]` |
-| `POST` | `/reports` | Bearer | `ReportCreateRequest` → `GeneratedReport` |
-| `GET` | `/reports/{id}/pdf` | Bearer | Binary `application/pdf` ReportLab download (`Phase 6`) |
-| `GET` | `/admin/overview` | Bearer (`admin` role) | Returns `403` for non-admin; `AdminOverviewResponse` |
+| `GET` | `/admin/overview` | Bearer (`admin` role) | Returns `403` for non-admin; real DB counts + model registry status (`AdminOverviewResponse`) |
+| `GET` | `/admin/users` | Bearer (`admin` role) | Platform users directory with `farms_count` and `predictions_count` |
+| `PATCH` | `/admin/users/{user_id}` | Bearer (`admin` role) | Update user `role` or `is_active` (blocks self-deactivation/demotion with `400`) |
+| `GET` | `/analytics/overview` | Bearer (`Phase 5/8`) | Query params: `crop`, `state`, `season`, `year_start`, `year_end` -> `AnalyticsResponse` |
+| `GET` | `/reports` | Bearer (`Phase 6/8`) | Returns `GeneratedReport[]` |
+| `POST` | `/reports` | Bearer (`Phase 6/8`) | `ReportCreateRequest` -> `GeneratedReport` |
+| `GET` | `/reports/{id}/pdf` | Bearer (`Phase 6/8`) | Binary `application/pdf` ReportLab download |
 
 ---
 
@@ -107,4 +123,17 @@ FastAPI HTTP errors follow:
   "detail": "Human-readable validation or authorization error message"
 }
 ```
-Frontend `ApiError` extracts `detail` cleanly across `400`, `401`, `403`, `404`, `413`, `422`, `429`, and `500` status codes.
+Validation errors (`422`) additionally include structured field-level details:
+```json
+{
+  "detail": "area_hectares: Input should be greater than 0",
+  "errors": [
+    {
+      "field": "area_hectares",
+      "message": "Input should be greater than 0",
+      "type": "greater_than"
+    }
+  ]
+}
+```
+Frontend `ApiError` extracts `detail` cleanly across `400`, `401`, `403`, `404`, `409`, `413`, `422`, `429`, `500`, and `503` status codes.

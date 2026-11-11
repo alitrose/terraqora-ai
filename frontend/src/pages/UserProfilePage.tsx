@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MapPin, Plus, Save, Trash2, UserCheck } from 'lucide-react';
+import { MapPin, Pencil, Plus, Save, Trash2, UserCheck, X } from 'lucide-react';
 import { profileService } from '../api/services';
 import { AppShell } from '../components/AppShell';
 import {
@@ -34,7 +34,8 @@ export function UserProfilePage() {
   const [farms, setFarms] = useState<Farm[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
-  const [addingFarm, setAddingFarm] = useState(false);
+  const [savingFarm, setSavingFarm] = useState(false);
+  const [editingFarmId, setEditingFarmId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Profile form fields
@@ -48,7 +49,7 @@ export function UserProfilePage() {
   const [primarySoil, setPrimarySoil] = useState<string>(SOIL_TYPES[0]);
   const [preferredUnits, setPreferredUnits] = useState<'metric' | 'imperial'>('metric');
 
-  // Add farm form fields
+  // Add / Edit farm form fields
   const [farmName, setFarmName] = useState('');
   const [farmState, setFarmState] = useState<string>('Tamil Nadu');
   const [farmDistrict, setFarmDistrict] = useState('');
@@ -58,6 +59,18 @@ export function UserProfilePage() {
   const [farmIrrigation, setFarmIrrigation] =
     useState<NonNullable<Farm['irrigation_type']>>('drip');
   const [farmCrop, setFarmCrop] = useState<string>('Rice');
+
+  const resetFarmForm = () => {
+    setEditingFarmId(null);
+    setFarmName('');
+    setFarmState('Tamil Nadu');
+    setFarmDistrict('');
+    setFarmArea(2.5);
+    setFarmSoilType(SOIL_TYPES[0]);
+    setFarmPh(6.5);
+    setFarmIrrigation('drip');
+    setFarmCrop('Rice');
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -70,6 +83,11 @@ export function UserProfilePage() {
       setProfile(prof);
       setFarms(farmList);
 
+      if (prof.preferred_language) {
+        setPreferredLanguage(prof.preferred_language);
+      } else if (user?.preferred_language) {
+        setPreferredLanguage(user.preferred_language);
+      }
       setState(prof.state || 'Tamil Nadu');
       setDistrict(prof.district || '');
       setPhone(prof.phone || '');
@@ -104,6 +122,7 @@ export function UserProfilePage() {
         experience_years: experienceYears,
         primary_soil_type: primarySoil,
         preferred_units: preferredUnits,
+        preferred_language: preferredLanguage,
       });
       setProfile(updated);
       updateUserLocal({ preferred_language: preferredLanguage });
@@ -115,7 +134,20 @@ export function UserProfilePage() {
     }
   };
 
-  const handleAddFarm = async (e: React.FormEvent) => {
+  const handleStartEditFarm = (farm: Farm) => {
+    setError(null);
+    setEditingFarmId(farm.id);
+    setFarmName(farm.name);
+    setFarmState(farm.state);
+    setFarmDistrict(farm.district || '');
+    setFarmArea(farm.area_hectares);
+    setFarmSoilType(farm.soil_type || SOIL_TYPES[0]);
+    setFarmPh(farm.soil_ph ?? 6.5);
+    setFarmIrrigation(farm.irrigation_type || 'drip');
+    setFarmCrop(farm.primary_crop || 'Rice');
+  };
+
+  const handleSaveFarm = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     if (farmName.trim().length < 2) {
@@ -131,28 +163,42 @@ export function UserProfilePage() {
       return;
     }
 
-    setAddingFarm(true);
+    const payload = {
+      name: farmName.trim(),
+      state: farmState,
+      district: farmDistrict.trim() || null,
+      latitude: null,
+      longitude: null,
+      area_hectares: farmArea,
+      soil_type: farmSoilType,
+      soil_ph: farmPh,
+      irrigation_type: farmIrrigation,
+      primary_crop: farmCrop,
+    };
+
+    setSavingFarm(true);
     try {
-      const created = await profileService.createFarm({
-        name: farmName.trim(),
-        state: farmState,
-        district: farmDistrict.trim() || null,
-        latitude: null,
-        longitude: null,
-        area_hectares: farmArea,
-        soil_type: farmSoilType,
-        soil_ph: farmPh,
-        irrigation_type: farmIrrigation,
-        primary_crop: farmCrop,
-      });
-      setFarms((prev) => [created, ...prev]);
-      setFarmName('');
-      setFarmDistrict('');
-      notify(`Registered farm "${created.name}"`, 'success');
+      if (editingFarmId) {
+        const updated = await profileService.updateFarm(editingFarmId, payload);
+        setFarms((prev) => prev.map((f) => (f.id === editingFarmId ? updated : f)));
+        resetFarmForm();
+        notify(`Updated farm "${updated.name}"`, 'success');
+      } else {
+        const created = await profileService.createFarm(payload);
+        setFarms((prev) => [created, ...prev]);
+        resetFarmForm();
+        notify(`Registered farm "${created.name}"`, 'success');
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to register farm.');
+      setError(
+        err instanceof Error
+          ? err.message
+          : editingFarmId
+            ? 'Unable to update farm.'
+            : 'Unable to register farm.'
+      );
     } finally {
-      setAddingFarm(false);
+      setSavingFarm(false);
     }
   };
 
@@ -161,6 +207,9 @@ export function UserProfilePage() {
     try {
       await profileService.deleteFarm(id);
       setFarms((prev) => prev.filter((f) => f.id !== id));
+      if (editingFarmId === id) {
+        resetFarmForm();
+      }
       notify(`Removed farm "${name}"`, 'info');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to delete farm.');
@@ -338,14 +387,26 @@ export function UserProfilePage() {
 
           {/* Farms Management Column */}
           <div className="space-y-6 lg:col-span-7">
-            {/* Add Farm Card */}
+            {/* Add / Edit Farm Card */}
             <form
-              onSubmit={handleAddFarm}
+              onSubmit={handleSaveFarm}
               className="space-y-4 rounded-2xl border border-soil-border bg-white p-6 shadow-card"
             >
-              <h2 className="font-display text-base font-bold text-forest-deep">
-                Register New Farm Plot
-              </h2>
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="font-display text-base font-bold text-forest-deep">
+                  {editingFarmId ? 'Edit Farm Plot' : 'Register New Farm Plot'}
+                </h2>
+                {editingFarmId && (
+                  <button
+                    type="button"
+                    onClick={resetFarmForm}
+                    className="inline-flex items-center gap-1 rounded-lg border border-soil-border px-2.5 py-1 text-xs font-semibold text-soil-muted hover:bg-parchment hover:text-soil-charcoal"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
 
               <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
                 <div className="sm:col-span-2 lg:col-span-1">
@@ -484,11 +545,20 @@ export function UserProfilePage() {
                 <div className="flex items-end">
                   <button
                     type="submit"
-                    disabled={addingFarm}
+                    disabled={savingFarm}
                     className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-leaf px-3 py-2.5 text-xs font-semibold text-white hover:bg-forest-hover disabled:opacity-60"
                   >
-                    <Plus className="h-4 w-4" />
-                    {addingFarm ? 'Adding...' : 'Add Farm Plot'}
+                    {editingFarmId ? (
+                      <>
+                        <Save className="h-4 w-4" />
+                        {savingFarm ? 'Saving...' : 'Save Farm Changes'}
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4" />
+                        {savingFarm ? 'Adding...' : 'Add Farm Plot'}
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -528,8 +598,8 @@ export function UserProfilePage() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="mr-1 text-right">
                           <p className="font-mono text-sm font-bold text-soil-charcoal">
                             {farm.area_hectares} ha
                           </p>
@@ -537,6 +607,14 @@ export function UserProfilePage() {
                             {farm.primary_crop || 'Multi-crop'}
                           </p>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => handleStartEditFarm(farm)}
+                          aria-label={`Edit ${farm.name}`}
+                          className="rounded-lg border border-soil-border bg-white p-2 text-soil-muted hover:border-emerald-border hover:bg-emerald-mist/60 hover:text-forest-deep"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
                         <button
                           type="button"
                           onClick={() => handleDeleteFarm(farm.id, farm.name)}

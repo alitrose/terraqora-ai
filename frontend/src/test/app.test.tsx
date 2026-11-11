@@ -215,7 +215,7 @@ describe('TerraQora AI — Phase 3 Frontend Suite', () => {
     expect(window.print).toHaveBeenCalled();
   });
 
-  it('updates Farmer Profile settings and performs Farm Plot Create & Delete CRUD on /profile', async () => {
+  it('updates Farmer Profile settings and performs Farm Plot Create, Update & Delete CRUD on /profile', async () => {
     renderAt('/auth');
     const user = await signInAsDemoFarmer();
 
@@ -233,14 +233,23 @@ describe('TerraQora AI — Phase 3 Frontend Suite', () => {
     fireEvent.change(farmNameInput, { target: { value: 'Salem West Terrace' } });
     await user.click(screen.getByRole('button', { name: /Add Farm Plot/i }));
 
+    const editBtn = await screen.findByRole('button', {
+      name: /Edit Salem West Terrace/i,
+    });
+    await user.click(editBtn);
+    fireEvent.change(screen.getByLabelText(/Plot \/ Farm Name/i), {
+      target: { value: 'Salem North Terrace' },
+    });
+    await user.click(screen.getByRole('button', { name: /Save Farm Changes/i }));
+
     const delBtn = await screen.findByRole('button', {
-      name: /Delete Salem West Terrace/i,
+      name: /Delete Salem North Terrace/i,
     });
     expect(delBtn).toBeInTheDocument();
     await user.click(delBtn);
     await waitFor(() => {
       expect(
-        screen.queryByRole('button', { name: /Delete Salem West Terrace/i })
+        screen.queryByRole('button', { name: /Delete Salem North Terrace/i })
       ).not.toBeInTheDocument();
     });
   });

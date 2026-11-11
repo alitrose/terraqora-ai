@@ -1,4 +1,4 @@
-import { ApiError, apiRequest, getApiMode } from './client';
+import { ApiError, apiRequest, getApiMode, isDemoPreviewToken } from './client';
 import { demoSandbox } from './demoSandbox';
 import type {
   AdminOverviewResponse,
@@ -13,6 +13,8 @@ import type {
   CropYieldResponse,
   DiseaseDetectionResponse,
   Farm,
+  FarmPayload,
+  FarmUpdatePayload,
   FarmerProfile,
   FertilizerRequest,
   FertilizerResponse,
@@ -28,12 +30,37 @@ import type {
 
 async function withFallback<T>(
   liveCall: () => Promise<T>,
-  fallbackCall: () => T
+  fallbackCall: () => T,
+  respectDemoToken = true
 ): Promise<T> {
+  if (respectDemoToken && isDemoPreviewToken() && getApiMode() === 'auto') {
+    return fallbackCall();
+  }
   try {
     return await liveCall();
   } catch (err) {
     if (err instanceof ApiError && err.status === 0 && getApiMode() === 'auto') {
+      return fallbackCall();
+    }
+    throw err;
+  }
+}
+
+async function withPhasePendingFallback<T>(
+  liveCall: () => Promise<T>,
+  fallbackCall: () => T
+): Promise<T> {
+  if (isDemoPreviewToken() && getApiMode() === 'auto') {
+    return fallbackCall();
+  }
+  try {
+    return await liveCall();
+  } catch (err) {
+    if (
+      err instanceof ApiError &&
+      (err.status === 0 || err.status === 404 || err.status === 501) &&
+      getApiMode() === 'auto'
+    ) {
       return fallbackCall();
     }
     throw err;
@@ -48,7 +75,8 @@ export const authService = {
           method: 'POST',
           body: JSON.stringify(payload),
         }),
-      () => demoSandbox.login(payload.email, demoRoleHint)
+      () => demoSandbox.login(payload.email, demoRoleHint),
+      false
     ),
 
   register: (payload: RegisterPayload) =>
@@ -63,7 +91,8 @@ export const authService = {
           payload.full_name,
           payload.email,
           payload.preferred_language
-        )
+        ),
+      false
     ),
 
   getMe: () =>
@@ -96,7 +125,7 @@ export const profileService = {
       () => demoSandbox.getFarms()
     ),
 
-  createFarm: (payload: Omit<Farm, 'id' | 'user_id' | 'created_at'>) =>
+  createFarm: (payload: FarmPayload) =>
     withFallback<Farm>(
       () =>
         apiRequest<Farm>('/farms', {
@@ -104,6 +133,16 @@ export const profileService = {
           body: JSON.stringify(payload),
         }),
       () => demoSandbox.createFarm(payload)
+    ),
+
+  updateFarm: (id: string, patch: FarmUpdatePayload) =>
+    withFallback<Farm>(
+      () =>
+        apiRequest<Farm>(`/farms/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(patch),
+        }),
+      () => demoSandbox.updateFarm(id, patch)
     ),
 
   deleteFarm: (id: string) =>
@@ -115,7 +154,7 @@ export const profileService = {
 
 export const mlService = {
   predictYield: (payload: CropYieldRequest) =>
-    withFallback<CropYieldResponse>(
+    withPhasePendingFallback<CropYieldResponse>(
       () =>
         apiRequest<CropYieldResponse>('/predictions/yield', {
           method: 'POST',
@@ -126,7 +165,7 @@ export const mlService = {
     ),
 
   detectDisease: (file: File, cropHint: string) =>
-    withFallback<DiseaseDetectionResponse>(
+    withPhasePendingFallback<DiseaseDetectionResponse>(
       () => {
         const form = new FormData();
         form.append('file', file);
@@ -141,7 +180,7 @@ export const mlService = {
     ),
 
   recommendFertilizer: (payload: FertilizerRequest) =>
-    withFallback<FertilizerResponse>(
+    withPhasePendingFallback<FertilizerResponse>(
       () =>
         apiRequest<FertilizerResponse>('/recommendations/fertilizer', {
           method: 'POST',
@@ -151,7 +190,7 @@ export const mlService = {
     ),
 
   recommendCrop: (payload: CropRecommendationRequest) =>
-    withFallback<CropRecommendationResponse>(
+    withPhasePendingFallback<CropRecommendationResponse>(
       () =>
         apiRequest<CropRecommendationResponse>('/recommendations/crop', {
           method: 'POST',
@@ -163,7 +202,7 @@ export const mlService = {
 
 export const weatherService = {
   getIrrigationAdvisory: (payload: WeatherIrrigationRequest) =>
-    withFallback<WeatherIrrigationResponse>(
+    withPhasePendingFallback<WeatherIrrigationResponse>(
       () =>
         apiRequest<WeatherIrrigationResponse>('/weather/irrigation', {
           method: 'POST',
@@ -176,13 +215,13 @@ export const weatherService = {
 
 export const chatService = {
   listSessions: () =>
-    withFallback<ChatSession[]>(
+    withPhasePendingFallback<ChatSession[]>(
       () => apiRequest<ChatSession[]>('/chat/sessions'),
       () => demoSandbox.getChatSessions()
     ),
 
   createSession: (language: SupportedLanguage, title?: string) =>
-    withFallback<ChatSession>(
+    withPhasePendingFallback<ChatSession>(
       () =>
         apiRequest<ChatSession>('/chat/sessions', {
           method: 'POST',
@@ -192,13 +231,13 @@ export const chatService = {
     ),
 
   getMessages: (sessionId: string) =>
-    withFallback<ChatMessage[]>(
+    withPhasePendingFallback<ChatMessage[]>(
       () => apiRequest<ChatMessage[]>(`/chat/sessions/${sessionId}/messages`),
       () => demoSandbox.getChatMessages(sessionId)
     ),
 
   clearSession: (sessionId: string) =>
-    withFallback<void>(
+    withPhasePendingFallback<void>(
       () =>
         apiRequest<void>(`/chat/sessions/${sessionId}/messages`, {
           method: 'DELETE',
@@ -207,7 +246,7 @@ export const chatService = {
     ),
 
   sendMessage: (sessionId: string, content: string, language: SupportedLanguage) =>
-    withFallback<{ userMsg: ChatMessage; assistantMsg: ChatMessage }>(
+    withPhasePendingFallback<{ userMsg: ChatMessage; assistantMsg: ChatMessage }>(
       async () => {
         const res = await apiRequest<{
           user_message: ChatMessage;
@@ -232,7 +271,7 @@ export const analyticsService = {
     if (filters.year_start) params.set('year_start', String(filters.year_start));
     if (filters.year_end) params.set('year_end', String(filters.year_end));
     const qs = params.toString();
-    return withFallback<AnalyticsResponse>(
+    return withPhasePendingFallback<AnalyticsResponse>(
       () => apiRequest<AnalyticsResponse>(`/analytics/overview${qs ? `?${qs}` : ''}`),
       () => demoSandbox.getAnalytics(filters)
     );
@@ -241,13 +280,13 @@ export const analyticsService = {
 
 export const reportsService = {
   list: () =>
-    withFallback<GeneratedReport[]>(
+    withPhasePendingFallback<GeneratedReport[]>(
       () => apiRequest<GeneratedReport[]>('/reports'),
       () => demoSandbox.getReports()
     ),
 
   create: (payload: ReportCreateRequest) =>
-    withFallback<GeneratedReport>(
+    withPhasePendingFallback<GeneratedReport>(
       () =>
         apiRequest<GeneratedReport>('/reports', {
           method: 'POST',

@@ -20,7 +20,7 @@ export function AuthPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const { login, register } = useAuth();
+  const { login, register, enterDemoSandbox } = useAuth();
   const { notify } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -70,23 +70,11 @@ export function AuthPage() {
     }
   };
 
-  const handleSandboxDemo = async (role: 'farmer' | 'admin') => {
+  const handleSandboxDemo = (role: 'farmer' | 'admin') => {
     setErrorMsg(null);
-    setSubmitting(true);
-    try {
-      const demoEmail =
-        role === 'admin' ? 'admin@terraqora.demo' : 'ananya.farmer@terraqora.demo';
-      const user = await login(
-        { email: demoEmail, password: 'DemoPreviewUser#2026' },
-        role
-      );
-      notify(`Signed into ${role} preview sandbox (${user.full_name})`, 'info');
-      navigate(role === 'admin' ? '/admin' : '/dashboard', { replace: true });
-    } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Preview sign-in failed.');
-    } finally {
-      setSubmitting(false);
-    }
+    const user = enterDemoSandbox(role);
+    notify(`Signed into ${role} preview sandbox (${user.full_name})`, 'info');
+    navigate(role === 'admin' ? '/admin' : '/dashboard', { replace: true });
   };
 
   return (
@@ -115,11 +103,12 @@ export function AuthPage() {
 
         <div className="mt-10 rounded-2xl border border-white/15 bg-white/5 p-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-gold-bright">
-            Phase 3 Frontend Preview Notice
+            Live Backend &amp; Preview Sandbox
           </p>
           <p className="mt-1.5 text-xs leading-relaxed text-parchment/80">
-            When the FastAPI backend is not running locally, TerraQora automatically enables
-            Preview Sandbox mode with clearly labeled synthetic demonstration data.
+            Sign In and Register authenticate directly against the FastAPI + JWT backend when
+            running, or fall back to labeled Preview Sandbox mode when offline or using the
+            instant sandbox buttons.
           </p>
         </div>
       </div>

@@ -1,0 +1,56 @@
+# Environment & Secrets (NEVER commit real secrets)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python & Virtual Environments
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# Frontend / Node
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Large ML Models & Downloaded Image Datasets (tracked via docs & training pipelines)
+*.pkl
+*.joblib
+*.h5
+*.keras
+*.tflite
+*.onnx
+ml/datasets/plantvillage/
+ml/datasets/processed/
+ml/saved_models/*.pkl
+ml/saved_models/*.keras
+ml/saved_models/*.tflite
+ml/saved_models/*.h5
+
+# Local Databases, Uploads & Generated Outputs
+*.db
+*.sqlite
+*.sqlite3
+uploads/
+generated_pdfs/
+logs/
+*.log
+
+# OS & Editor Files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

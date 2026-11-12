@@ -506,7 +506,10 @@ def test_recommendation_endpoints_end_to_end_safety_and_admin_registry(
     assert "KB" in by_mod["Crop Recommendation"]["artifact_size"]
     assert by_mod["Fertilizer Recommendation"]["status"] == "Active (Phase 5b Live)"
     assert "KB" in by_mod["Fertilizer Recommendation"]["artifact_size"]
-    assert by_mod["Plant Disease Vision"]["status"] == "Phase 7 Scheduled"
+    assert by_mod["Plant Disease Vision"]["status"] in {
+        "Active (Phase 7 Live)",
+        "Artifact Missing",
+    }
 
     # Missing/corrupt artifacts fail closed with 503 and no path/traceback leakage
     try:

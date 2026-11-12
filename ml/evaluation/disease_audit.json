@@ -1,0 +1,384 @@
+{
+  "dataset_repo": "BrandonFors/Plant-Diseases-PlantVillage-Dataset",
+  "license": "cc0-1.0",
+  "citation": "Hughes & Salathe (2015), 'An open access repository of images on plant health to enable the development of mobile disease diagnostics', arXiv:1511.08060; distributed via HuggingFace dataset 'BrandonFors/Plant-Diseases-PlantVillage-Dataset' (cc0-1.0).",
+  "parquet_files": [
+    {
+      "upstream_split": "test",
+      "filename": "test-00000-of-00001.parquet",
+      "size_bytes": 169812718,
+      "size_mb": 161.95
+    },
+    {
+      "upstream_split": "train",
+      "filename": "train-00000-of-00002.parquet",
+      "size_bytes": 320625654,
+      "size_mb": 305.77
+    },
+    {
+      "upstream_split": "train",
+      "filename": "train-00001-of-00002.parquet",
+      "size_bytes": 361639059,
+      "size_mb": 344.89
+    }
+  ],
+  "integrity_summary": {
+    "total_decoded_valid_images": 54305,
+    "corrupt_or_unreadable_images": 0,
+    "num_classes": 38,
+    "num_supported_crop_species": 14,
+    "supported_crop_species": [
+      "Apple",
+      "Blueberry",
+      "Cherry",
+      "Corn (Maize)",
+      "Grape",
+      "Orange (Citrus)",
+      "Peach",
+      "Pepper (Bell)",
+      "Potato",
+      "Raspberry",
+      "Soybean",
+      "Squash",
+      "Strawberry",
+      "Tomato"
+    ],
+    "unsupported_major_crops_examples": [
+      "Rice",
+      "Wheat",
+      "Cotton",
+      "Sugarcane",
+      "Coconut",
+      "Banana",
+      "Groundnut",
+      "Chickpea",
+      "Mustard",
+      "Onion",
+      "Mango"
+    ],
+    "image_formats": {
+      "JPEG": 54305
+    },
+    "image_modes": {
+      "RGB": 54305
+    },
+    "width_px": {
+      "min": 256,
+      "median": 256,
+      "max": 256
+    },
+    "height_px": {
+      "min": 256,
+      "median": 256,
+      "max": 256
+    }
+  },
+  "duplicate_and_leakage_audit": {
+    "unique_sha256_count": 54284,
+    "exact_sha256_duplicate_images": 21,
+    "unique_dhash_count": 54274,
+    "near_duplicate_dhash_images": 31,
+    "upstream_train_vs_test_sha256_overlap": 7,
+    "upstream_train_vs_test_dhash_overlap": 8,
+    "cross_class_sha256_collisions": 0,
+    "cross_class_dhash_collisions": 1,
+    "mitigation_applied": "Excluded cross-class hash collisions, collapsed near-duplicate perceptual dHash groups, and rebuilt grouped stratified train/val/test splits with 0% SHA-256 and 0% dHash overlap."
+  },
+  "class_distribution_raw": {
+    "min_images_per_class": 152,
+    "max_images_per_class": 5507,
+    "imbalance_ratio": 36.23,
+    "counts": {
+      "Apple___Apple_scab": 630,
+      "Apple___Black_rot": 621,
+      "Apple___Cedar_apple_rust": 275,
+      "Apple___healthy": 1645,
+      "Blueberry___healthy": 1502,
+      "Cherry_(including_sour)___Powdery_mildew": 1052,
+      "Cherry_(including_sour)___healthy": 854,
+      "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot": 513,
+      "Corn_(maize)___Common_rust_": 1192,
+      "Corn_(maize)___Northern_Leaf_Blight": 985,
+      "Corn_(maize)___healthy": 1162,
+      "Grape___Black_rot": 1180,
+      "Grape___Esca_(Black_Measles)": 1383,
+      "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)": 1076,
+      "Grape___healthy": 423,
+      "Orange___Haunglongbing_(Citrus_greening)": 5507,
+      "Peach___Bacterial_spot": 2297,
+      "Peach___healthy": 360,
+      "Pepper,_bell___Bacterial_spot": 997,
+      "Pepper,_bell___healthy": 1478,
+      "Potato___Early_blight": 1000,
+      "Potato___Late_blight": 1000,
+      "Potato___healthy": 152,
+      "Raspberry___healthy": 371,
+      "Soybean___healthy": 5090,
+      "Squash___Powdery_mildew": 1835,
+      "Strawberry___Leaf_scorch": 1109,
+      "Strawberry___healthy": 456,
+      "Tomato___Bacterial_spot": 2127,
+      "Tomato___Early_blight": 1000,
+      "Tomato___Late_blight": 1909,
+      "Tomato___Leaf_Mold": 952,
+      "Tomato___Septoria_leaf_spot": 1771,
+      "Tomato___Spider_mites Two-spotted_spider_mite": 1676,
+      "Tomato___Target_Spot": 1404,
+      "Tomato___Tomato_Yellow_Leaf_Curl_Virus": 5357,
+      "Tomato___Tomato_mosaic_virus": 373,
+      "Tomato___healthy": 1591
+    }
+  },
+  "deduplicated_split_summary": {
+    "splits_manifest_path": "ml/datasets/processed/disease_splits.parquet",
+    "split_seed": 20261112,
+    "total_curated_images": 7367,
+    "train_count": 4539,
+    "val_count": 1133,
+    "test_count": 1695,
+    "train_val_sha256_overlap": 0,
+    "train_test_sha256_overlap": 0,
+    "val_test_sha256_overlap": 0,
+    "train_val_dhash_overlap": 0,
+    "train_test_dhash_overlap": 0,
+    "val_test_dhash_overlap": 0,
+    "per_class_pool_unique_dhash_counts": {
+      "Apple___Apple_scab": 630,
+      "Apple___Black_rot": 621,
+      "Apple___Cedar_apple_rust": 275,
+      "Apple___healthy": 1638,
+      "Blueberry___healthy": 1502,
+      "Cherry_(including_sour)___Powdery_mildew": 1051,
+      "Cherry_(including_sour)___healthy": 853,
+      "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot": 513,
+      "Corn_(maize)___Common_rust_": 1189,
+      "Corn_(maize)___Northern_Leaf_Blight": 984,
+      "Corn_(maize)___healthy": 1159,
+      "Grape___Black_rot": 1180,
+      "Grape___Esca_(Black_Measles)": 1383,
+      "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)": 1076,
+      "Grape___healthy": 423,
+      "Orange___Haunglongbing_(Citrus_greening)": 5507,
+      "Peach___Bacterial_spot": 2297,
+      "Peach___healthy": 360,
+      "Pepper,_bell___Bacterial_spot": 997,
+      "Pepper,_bell___healthy": 1477,
+      "Potato___Early_blight": 1000,
+      "Potato___Late_blight": 1000,
+      "Potato___healthy": 152,
+      "Raspberry___healthy": 371,
+      "Soybean___healthy": 5090,
+      "Squash___Powdery_mildew": 1835,
+      "Strawberry___Leaf_scorch": 1109,
+      "Strawberry___healthy": 456,
+      "Tomato___Bacterial_spot": 2127,
+      "Tomato___Early_blight": 1000,
+      "Tomato___Late_blight": 1901,
+      "Tomato___Leaf_Mold": 952,
+      "Tomato___Septoria_leaf_spot": 1770,
+      "Tomato___Spider_mites Two-spotted_spider_mite": 1676,
+      "Tomato___Target_Spot": 1404,
+      "Tomato___Tomato_Yellow_Leaf_Curl_Virus": 5357,
+      "Tomato___Tomato_mosaic_virus": 373,
+      "Tomato___healthy": 1585
+    },
+    "per_class_split_counts": {
+      "Apple___Apple_scab": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Apple___Black_rot": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Apple___Cedar_apple_rust": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Apple___healthy": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Blueberry___healthy": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Cherry_(including_sour)___Powdery_mildew": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Cherry_(including_sour)___healthy": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Corn_(maize)___Common_rust_": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Corn_(maize)___Northern_Leaf_Blight": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Corn_(maize)___healthy": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Grape___Black_rot": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Grape___Esca_(Black_Measles)": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Grape___healthy": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Orange___Haunglongbing_(Citrus_greening)": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Peach___Bacterial_spot": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Peach___healthy": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Pepper,_bell___Bacterial_spot": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Pepper,_bell___healthy": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Potato___Early_blight": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Potato___Late_blight": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Potato___healthy": {
+        "train": 99,
+        "val": 23,
+        "test": 30
+      },
+      "Raspberry___healthy": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Soybean___healthy": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Squash___Powdery_mildew": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Strawberry___Leaf_scorch": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Strawberry___healthy": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Tomato___Bacterial_spot": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Tomato___Early_blight": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Tomato___Late_blight": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Tomato___Leaf_Mold": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Tomato___Septoria_leaf_spot": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Tomato___Spider_mites Two-spotted_spider_mite": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Tomato___Target_Spot": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Tomato___Tomato_Yellow_Leaf_Curl_Virus": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Tomato___Tomato_mosaic_virus": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      },
+      "Tomato___healthy": {
+        "train": 120,
+        "val": 30,
+        "test": 45
+      }
+    }
+  },
+  "documented_limitations": [
+    "PlantVillage covers 38 classes across 14 temperate/horticultural species only; major field crops such as Rice, Wheat, Cotton, Sugarcane, Coconut, and Banana are NOT represented.",
+    "Original PlantVillage images were captured mainly on uniform grey/dark laboratory backgrounds (segmented leaves), creating a domain gap when users upload cluttered live field canopy photos.",
+    "Visual leaf spots cannot definitively prove nutrient deficiency vs abiotic stress vs fungal/viral infection without KVK or lab verification.",
+    "Upstream split contained exact/near-duplicate leaves; evaluation strictly uses our deduplicated grouped splits to prevent inflated accuracy."
+  ]
+}

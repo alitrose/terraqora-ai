@@ -122,7 +122,7 @@ describe('TerraQora AI — Phase 3 Frontend Suite', () => {
     expect(await screen.findByText(/Recent Yield Forecasts/i)).toBeInTheDocument();
   });
 
-  it('validates Plant Disease upload file type/size and renders low-confidence uncertainty warning', async () => {
+  it('validates Plant Disease upload file type/size, unsupported crop scope, low-confidence warning, and history', async () => {
     renderAt('/auth');
     const user = await signInAsDemoFarmer();
 
@@ -138,7 +138,15 @@ describe('TerraQora AI — Phase 3 Frontend Suite', () => {
     await user.click(screen.getByRole('button', { name: /Detect Plant Disease/i }));
 
     expect(
-      await screen.findByText(/Uncertain Classification Warning/i)
+      await screen.findByText(/Uncertain Screening Notice/i)
+    ).toBeInTheDocument();
+    expect(await screen.findByText(/Recent Saved Leaf Screenings/i)).toBeInTheDocument();
+
+    // Selecting unsupported crop Rice triggers explicit scope warning + abstention
+    const cropHintSelect = screen.getByLabelText(/Expected Crop Species/i);
+    await user.selectOptions(cropHintSelect, 'Rice');
+    expect(
+      await screen.findByText(/not included in the PlantVillage 38-class dataset/i)
     ).toBeInTheDocument();
   });
 
@@ -178,7 +186,7 @@ describe('TerraQora AI — Phase 3 Frontend Suite', () => {
     expect(await screen.findByText(/Recent Crop Suitability Matches/i)).toBeInTheDocument();
   });
 
-  it('renders Weather & Irrigation page with explicit non-sensor weather notice', async () => {
+  it('renders Weather & Irrigation page with explicit non-sensor notice, withheld irrigation when inputs missing, and history', async () => {
     renderAt('/auth');
     const user = await signInAsDemoFarmer();
 
@@ -187,6 +195,14 @@ describe('TerraQora AI — Phase 3 Frontend Suite', () => {
       await screen.findByText(/Weather-Estimated Advisory Only/i)
     ).toBeInTheDocument();
     expect(screen.getByText(/7-Day Rainfall vs\. Max Temperature Forecast/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Recent Saved Irrigation Advisories/i)).toBeInTheDocument();
+
+    // Clearing growth stage to unknown must withhold irrigation depth cleanly
+    await user.selectOptions(screen.getByLabelText(/Growth Stage/i), 'unknown');
+    await user.click(screen.getByRole('button', { name: /Update Advisory/i }));
+    expect(
+      await screen.findByText(/Urgency: insufficient data/i)
+    ).toBeInTheDocument();
   });
 
   it('supports 5-language GenAI Farming Assistant chat flow, rename, farm context, and clear/delete', async () => {

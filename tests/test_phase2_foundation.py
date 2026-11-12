@@ -39,15 +39,39 @@ def test_no_exposed_secrets_in_repository():
         re.compile(r"sk-[0-9A-Za-z]{20,}"),
         re.compile(r"3Ehbl3[0-9A-Za-z_]{15,}"),
     ]
+    import os
+
     skip_dirs = {".git", "node_modules", "dist", ".venv", "__pycache__", ".pytest_cache"}
-    for file_path in ROOT.rglob("*"):
-        if not file_path.is_file():
-            continue
-        if any(part in skip_dirs for part in file_path.parts) or file_path.suffix == ".csv":
-            continue
-        text = file_path.read_text(encoding="utf-8", errors="ignore")
-        for pat in secret_patterns:
-            assert not pat.search(text), f"Potential secret found in {file_path}"
+    skip_suffixes = {
+        ".csv",
+        ".parquet",
+        ".part",
+        ".pt",
+        ".pth",
+        ".joblib",
+        ".pkl",
+        ".keras",
+        ".h5",
+        ".tflite",
+        ".onnx",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".webp",
+        ".db",
+        ".sqlite",
+        ".sqlite3",
+        ".pdf",
+    }
+    for dirpath, dirnames, filenames in os.walk(ROOT):
+        dirnames[:] = [d for d in dirnames if d not in skip_dirs]
+        for fname in filenames:
+            file_path = Path(dirpath) / fname
+            if file_path.suffix.lower() in skip_suffixes:
+                continue
+            text = file_path.read_text(encoding="utf-8", errors="ignore")
+            for pat in secret_patterns:
+                assert not pat.search(text), f"Potential secret found in {file_path}"
 
 
 def test_env_example_and_gitignore():

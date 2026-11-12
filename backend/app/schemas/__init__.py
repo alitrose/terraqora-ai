@@ -23,6 +23,7 @@ from app.schemas.chat import (
     ChatSessionUpdate,
     ChatTurnResponse,
 )
+from app.schemas.disease import DiseaseCandidateOut, DiseaseDetectionResponse
 from app.schemas.farm import FarmCreate, FarmOut, FarmUpdate, IrrigationType
 from app.schemas.predictions import (
     CropYieldRequest,
@@ -38,6 +39,12 @@ from app.schemas.recommendations import (
     NutrientLevelOut,
 )
 from app.schemas.profile import FarmerProfileOut, FarmerProfileUpdate, PreferredUnits
+from app.schemas.weather import (
+    DailyForecastPointOut,
+    WeatherAlertOut,
+    WeatherIrrigationRequest,
+    WeatherIrrigationResponse,
+)
 
 __all__ = [
     "AdminModelStatusItem",
@@ -59,6 +66,9 @@ __all__ = [
     "CropRecommendationResponse",
     "CropYieldRequest",
     "CropYieldResponse",
+    "DailyForecastPointOut",
+    "DiseaseCandidateOut",
+    "DiseaseDetectionResponse",
     "FarmCreate",
     "FarmOut",
     "FarmUpdate",
@@ -75,4 +85,7 @@ __all__ = [
     "SupportedLanguage",
     "UserOut",
     "UserRole",
+    "WeatherAlertOut",
+    "WeatherIrrigationRequest",
+    "WeatherIrrigationResponse",
 ]

@@ -17,6 +17,7 @@ from app.schemas.admin import (
 )
 from app.services.crop_rec_service import get_crop_rec_registry_status
 from app.services.crop_yield_service import get_crop_yield_registry_status
+from app.services.disease_service import get_disease_registry_status
 from app.services.fertilizer_service import get_fertilizer_registry_status
 
 logger = logging.getLogger("terraqora.admin")
@@ -80,14 +81,7 @@ def get_admin_overview(
 
     models = [
         get_crop_yield_registry_status(),
-        AdminModelStatusItem(
-            module="Plant Disease Vision",
-            algorithm="MobileNetV2 Transfer Learning (TensorFlow/Keras + TFLite)",
-            status="Phase 7 Scheduled",
-            metric_label="Validation F1",
-            metric_value="Pending Phase 7 Training",
-            artifact_size="< 10 MB target",
-        ),
+        get_disease_registry_status(),
         get_crop_rec_registry_status(),
         get_fertilizer_registry_status(),
     ]

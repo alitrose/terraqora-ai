@@ -153,6 +153,8 @@ let demoReports: GeneratedReport[] = [
 let demoYieldHistory: CropYieldResponse[] = [];
 let demoCropRecHistory: CropRecommendationResponse[] = [];
 let demoFertilizerHistory: FertilizerResponse[] = [];
+let demoWeatherHistory: WeatherIrrigationResponse[] = [];
+let demoDiseaseHistory: DiseaseDetectionResponse[] = [];
 
 export const demoSandbox = {
   login(email: string, roleHint?: 'farmer' | 'admin'): AuthSession {
@@ -282,59 +284,102 @@ export const demoSandbox = {
     return [...demoYieldHistory];
   },
 
-  detectDisease(file: File, cropHint: string): DiseaseDetectionResponse {
+  detectDisease(file: File, cropHint: string, farmId?: string | null): DiseaseDetectionResponse {
     const nameLower = file.name.toLowerCase();
-    const isBlurryOrUnknown = nameLower.includes('unknown') || nameLower.includes('blur') || file.size < 18000;
-    const isHealthy = nameLower.includes('healthy');
+    const unsupportedHint = ['rice', 'wheat', 'cotton', 'sugarcane', 'coconut'].includes(
+      cropHint.trim().toLowerCase()
+    );
+    const isBlurryOrUnknown =
+      nameLower.includes('unknown') || nameLower.includes('blur') || file.size < 18000;
+    const isHealthy = !unsupportedHint && !isBlurryOrUnknown && nameLower.includes('healthy');
 
     let label = 'Tomato___Early_blight';
     let cropName = cropHint || 'Tomato';
-    let diseaseName = 'Early Blight (Alternaria solani)';
+    let diseaseName = 'Early blight';
     let confidence = 0.87;
     let isUncertain = false;
 
-    if (isHealthy) {
-      label = `${cropName}___Healthy`;
+    if (unsupportedHint) {
+      label = 'Uncertain___Out_Of_Scope_Crop';
+      diseaseName = 'Uncertain / Unsupported Crop';
+      confidence = 0.42;
+      isUncertain = true;
+    } else if (isHealthy) {
+      label = `${cropName}___healthy`;
       diseaseName = 'Healthy Foliage';
       confidence = 0.93;
     } else if (nameLower.includes('rust')) {
-      label = 'Corn___Common_rust';
-      cropName = 'Maize / Corn';
-      diseaseName = 'Common Rust (Puccinia sorghi)';
+      label = 'Corn_(maize)___Common_rust_';
+      cropName = 'Corn (Maize)';
+      diseaseName = 'Common rust';
       confidence = 0.84;
     } else if (isBlurryOrUnknown) {
-      label = `${cropName}___Leaf_spot_uncertain`;
-      diseaseName = 'Unverified Foliar Stress / Spot';
+      label = `Uncertain___Review_Required (Tomato___Septoria_leaf_spot)`;
+      diseaseName = 'Uncertain Screening (Closest match: Tomato — Septoria leaf spot)';
       confidence = 0.54;
       isUncertain = true;
     }
 
-    return {
+    const entry: DiseaseDetectionResponse = {
       id: makeId('scan'),
+      farm_id: farmId ?? null,
+      crop_hint: cropHint || null,
       image_filename: file.name,
       predicted_label: label,
       crop_name: cropName,
       disease_name: diseaseName,
       is_healthy: isHealthy,
       confidence,
+      top2_margin: isUncertain ? 0.09 : 0.72,
       is_uncertain: isUncertain,
-      uncertainty_reason: isUncertain
-        ? 'Confidence is below 65%. Leaf lighting, framing, or symptom overlap prevents reliable classification — capture a sharp close-up of a single leaf in daylight or consult a plant pathologist.'
-        : null,
+      uncertainty_reason: unsupportedHint
+        ? `Expected crop '${cropHint}' is outside the 14-species PlantVillage training domain.`
+        : isUncertain
+          ? 'Calibrated top-1 probability is below 65%. Leaf lighting, framing, or symptom overlap prevents reliable classification — retake a clear daylight close-up or consult KVK.'
+          : null,
       top_predictions: [
         { label, confidence },
-        { label: `${cropName}___Septoria_leaf_spot`, confidence: Number(((1 - confidence) * 0.65).toFixed(2)) },
-        { label: `${cropName}___Healthy`, confidence: Number(((1 - confidence) * 0.35).toFixed(2)) },
+        {
+          label: `${cropName}___Septoria_leaf_spot`,
+          confidence: Number(((1 - confidence) * 0.65).toFixed(2)),
+        },
+        {
+          label: `${cropName}___healthy`,
+          confidence: Number(((1 - confidence) * 0.35).toFixed(2)),
+        },
       ],
-      treatment_summary: isHealthy
-        ? 'No pathology detected in preview check. Maintain routine scouting and balanced irrigation.'
-        : 'Remove severely infected lower leaves, avoid overhead irrigation in late evening, and consult your local Krishi Vigyan Kendra (KVK) before applying crop-labeled protectant fungicides.',
+      treatment_summary: isUncertain
+        ? 'Automated vision confidence is insufficient for a reliable diagnosis. Avoid applying unverified sprays and confirm with your local KVK.'
+        : isHealthy
+          ? 'No pathology detected in preview check. Maintain routine scouting and balanced irrigation.'
+          : 'Remove severely infected lower leaves, avoid overhead irrigation in late evening, and consult your local Krishi Vigyan Kendra (KVK) before applying crop-labeled protectant fungicides.',
       prevention_notes:
         'Ensure proper plant spacing for airflow, sanitize pruning tools, and follow 2–3 season crop rotation.',
-      model_version: 'preview-v0 (PlantVillage CNN trained in Phase 7)',
+      next_steps: isUncertain
+        ? [
+            'Capture a well-lit single-leaf photo against a plain neutral background.',
+            'Verify whether the crop belongs to the 14 supported PlantVillage species.',
+            'Share physical leaf samples with a KVK extension agronomist.',
+          ]
+        : [
+            'Scout 5–10 neighboring plants across the plot to check spread.',
+            'Confirm locally approved management products with KVK.',
+          ],
+      limitations: [
+        'Screening aid trained on PlantVillage single-leaf lab backgrounds; cluttered field backgrounds reduce certainty.',
+      ],
+      supported_scope_note:
+        'Covers 38 PlantVillage classes across 14 crop species; Rice, Wheat, Cotton, Sugarcane, and Coconut are not covered.',
+      model_version: 'preview-v0 (Sign in for live Phase 7 PyTorch CNN)',
       created_at: new Date().toISOString(),
       source_mode: 'demo_preview',
     };
+    demoDiseaseHistory = [entry, ...demoDiseaseHistory].slice(0, 10);
+    return entry;
+  },
+
+  getDiseaseHistory(): DiseaseDetectionResponse[] {
+    return [...demoDiseaseHistory];
   },
 
   recommendFertilizer(req: FertilizerRequest): FertilizerResponse {
@@ -508,6 +553,7 @@ export const demoSandbox = {
   },
 
   getWeatherIrrigation(req: WeatherIrrigationRequest): WeatherIrrigationResponse {
+    const nowIso = new Date().toISOString();
     const forecast = Array.from({ length: 7 }).map((_, idx) => {
       const d = new Date(Date.now() + idx * 86400000);
       const rain = idx === 2 ? 14.2 : idx === 3 ? 8.6 : idx === 5 ? 3.4 : 0.4;
@@ -519,52 +565,113 @@ export const demoSandbox = {
         temp_min_c: Number((tempMax - 7.8).toFixed(1)),
         humidity_pct: Math.min(92, Math.round(64 + rain * 1.5)),
         rain_mm: rain,
+        precipitation_probability_pct: rain > 5 ? 70 : 15,
         et0_mm: Math.max(2.1, et0),
       };
     });
 
     const totalRain = Number(forecast.reduce((s, p) => s + p.rain_mm, 0).toFixed(1));
     const avgEt0 = Number((forecast.reduce((s, p) => s + p.et0_mm, 0) / 7).toFixed(2));
+    const missing: string[] = [];
+    if (req.soil_moisture_pct == null) missing.push('in_field_soil_moisture_sensor_reading');
+    if (!req.crop_type) missing.push('crop_type');
+    if (!req.growth_stage || req.growth_stage === 'unknown') missing.push('crop_growth_stage');
+    if (!req.soil_type) missing.push('soil_type');
+    if (!req.irrigation_type) missing.push('irrigation_system_type');
+
+    const reqMissing = missing.filter((m) => m !== 'in_field_soil_moisture_sensor_reading');
     const kcMap: Record<string, number> = {
       initial: 0.55,
       development: 0.85,
       mid_season: 1.15,
       late_season: 0.75,
     };
-    const kc = kcMap[req.growth_stage] ?? 1.0;
-    const netNeed = Math.max(0, Number((avgEt0 * 7 * kc - totalRain * 0.75).toFixed(1)));
+    const kc = (req.growth_stage && kcMap[req.growth_stage]) || 1.0;
+    const netNeed =
+      reqMissing.length > 0
+        ? null
+        : req.irrigation_type === 'rainfed'
+          ? 0
+          : Math.max(0, Number((avgEt0 * 7 * kc - totalRain * 0.75).toFixed(1)));
 
-    return {
+    const entry: WeatherIrrigationResponse = {
       id: makeId('irr'),
-      location_name: req.location_name,
-      latitude: req.latitude,
-      longitude: req.longitude,
-      crop_type: req.crop_type,
-      growth_stage: req.growth_stage,
-      weather_provider: 'Open-Meteo Preview Stub (Live API wired in Phase 7)',
+      saved_to_history: reqMissing.length === 0,
+      farm_id: req.farm_id ?? null,
+      location_name: req.location_name || 'Coimbatore Station (Preview)',
+      latitude: req.latitude ?? 11.0168,
+      longitude: req.longitude ?? 76.9558,
+      crop_type: req.crop_type ?? null,
+      growth_stage: req.growth_stage ?? null,
+      soil_type: req.soil_type ?? null,
+      irrigation_type: req.irrigation_type ?? null,
+      weather_provider: 'Open-Meteo Preview Stub (Sign in for live API)',
+      provider_attribution: 'Demo Sandbox Synthetic Weather Only (Not live Open-Meteo telemetry)',
+      observation_time: nowIso,
+      forecast_generated_at: nowIso,
+      observation_age_minutes: 0,
+      freshness_status: 'live',
+      cache_hit: false,
+      units_summary: {
+        temperature: '°C',
+        humidity: '% RH',
+        wind_speed: 'km/h',
+        precipitation: 'mm',
+        et0: 'mm/day',
+        irrigation_depth: 'mm',
+      },
       current_temp_c: 29.8,
       current_humidity_pct: 68,
       wind_speed_kmh: 11.4,
-      weather_condition: 'Partly Cloudy — Light Monsoon Moisture',
+      weather_condition: 'Partly Cloudy (Preview Sandbox)',
       forecast_rainfall_7d_mm: totalRain,
       estimated_et0_mm: avgEt0,
       recommended_water_mm: netNeed,
-      irrigation_urgency: netNeed < 5 ? 'skip_rain_expected' : netNeed < 18 ? 'moderate' : 'high',
+      schedule_status:
+        reqMissing.length > 0
+          ? 'insufficient_agronomic_inputs'
+          : req.irrigation_type === 'rainfed'
+            ? 'rainfed_advisory'
+            : 'computed',
+      irrigation_urgency:
+        netNeed === null
+          ? 'insufficient_data'
+          : netNeed < 5
+            ? 'skip_rain_expected'
+            : netNeed < 18
+              ? 'moderate'
+              : 'high',
       is_sensor_backed: false,
       sensor_notice:
         'Weather-Estimated Advisory Only: Calculations use meteorological ET₀ and forecast precipitation, NOT physical in-field soil moisture probe readings.',
-      advisory_notes: `Estimated 7-day crop water deficit for ${req.crop_type} (${req.growth_stage.replace('_', ' ')}): ${netNeed} mm after accounting for expected ${totalRain} mm forecast rain.`,
+      missing_inputs: missing,
+      assumptions: [
+        'Demo preview mode uses synthetic weather values; sign in to connect live Open-Meteo telemetry.',
+      ],
+      advisory_notes:
+        netNeed === null
+          ? `Exact irrigation depth withheld because required inputs are missing (${reqMissing.join(', ')}).`
+          : `Estimated 7-day crop water requirement for ${req.crop_type} (${(req.growth_stage || 'mid_season').replace('_', ' ')}): ${netNeed} mm after accounting for ${totalRain} mm forecast rain.`,
       alerts: [
         {
           severity: 'info',
           title: 'Mid-Week Rain Window Expected',
-          message: 'Forecast indicates ~22.8 mm cumulative showers between Day 3 and Day 4. Defer heavy flood irrigation.',
+          message:
+            'Preview forecast indicates ~22.8 mm cumulative showers between Day 3 and Day 4. Defer heavy flood irrigation.',
         },
       ],
       forecast_7d: forecast,
-      created_at: new Date().toISOString(),
+      created_at: nowIso,
       source_mode: 'demo_preview',
     };
+    if (entry.saved_to_history) {
+      demoWeatherHistory = [entry, ...demoWeatherHistory].slice(0, 10);
+    }
+    return entry;
+  },
+
+  getWeatherHistory(): WeatherIrrigationResponse[] {
+    return [...demoWeatherHistory];
   },
 
   getChatSessions(): ChatSession[] {
@@ -829,11 +936,11 @@ export const demoSandbox = {
         },
         {
           module: 'Plant Disease Vision',
-          algorithm: 'MobileNetV2 Transfer Learning (TensorFlow/Keras + TFLite)',
-          status: 'Phase 7 Scheduled',
-          metric_label: 'Validation F1',
-          metric_value: 'Pending Phase 7 Training',
-          artifact_size: '< 10 MB target',
+          algorithm: 'MobileNetV3-Small Transfer Learning (PyTorch · Temperature Calibrated)',
+          status: 'Active (Phase 7 Live · Demo Preview)',
+          metric_label: 'Deduplicated Test (38 Classes)',
+          metric_value: 'Live on Backend (Demo Preview Stub)',
+          artifact_size: 'PyTorch CPU (.pt)',
         },
         {
           module: 'Crop Recommendation',

@@ -536,7 +536,12 @@ def test_rbac_admin_routes_and_user_deactivation(isolated_env):
     assert ov["active_farms"] == 1
     assert ov["total_predictions"] == 0
     assert any("Active" in m["status"] for m in ov["models"])
-    assert any("Phase 7 Scheduled" in m["status"] for m in ov["models"])
+    by_mod = {m["module"]: m for m in ov["models"]}
+    assert "Plant Disease Vision" in by_mod
+    assert by_mod["Plant Disease Vision"]["status"] in {
+        "Active (Phase 7 Live)",
+        "Artifact Missing",
+    }
 
     # Verify farmer row reports farms_count == 1
     farmer_row = next(u for u in ov["users"] if u["id"] == farmer_id)

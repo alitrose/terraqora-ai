@@ -13,7 +13,9 @@ from app.models.modules import (
     ChatSession,
     CropPrediction,
     CropRecommendation,
+    DiseaseDetection,
     FertilizerRecommendation,
+    IrrigationRecommendation,
 )
 from app.models.user import User
 from app.schemas.chat import (
@@ -27,6 +29,7 @@ from app.schemas.chat import (
 )
 from app.services.crop_rec_service import get_crop_rec_registry_status
 from app.services.crop_yield_service import get_crop_yield_registry_status
+from app.services.disease_service import get_disease_registry_status
 from app.services.fertilizer_service import get_fertilizer_registry_status
 
 if str(_PROJECT_ROOT) not in sys.path:
@@ -386,11 +389,74 @@ def _build_farm_and_ml_context(
             f"pH {latest_fert.soil_ph:.1f}, qualitative guidance only)"
         )
 
-    # Check live ML artifact readiness transparently (missing .joblib never breaks chat)
+    # Read latest saved Plant Disease Vision scan (never override uncertain scans!)
+    disease_stmt = (
+        select(DiseaseDetection)
+        .where(DiseaseDetection.user_id == user.id)
+        .order_by(DiseaseDetection.created_at.desc())
+        .limit(1)
+    )
+    if session.farm_id is not None:
+        farm_disease = db.scalar(
+            select(DiseaseDetection)
+            .where(
+                DiseaseDetection.user_id == user.id,
+                DiseaseDetection.farm_id == session.farm_id,
+            )
+            .order_by(DiseaseDetection.created_at.desc())
+            .limit(1)
+        )
+        latest_disease = farm_disease or db.scalar(disease_stmt)
+    else:
+        latest_disease = db.scalar(disease_stmt)
+
+    if latest_disease is not None:
+        certainty_tag = (
+            "UNCERTAIN (DO NOT treat as confirmed diagnosis; advise re-photo & KVK check)"
+            if latest_disease.is_uncertain
+            else "screened above threshold (still verify locally before spraying)"
+        )
+        ml_lines.append(
+            f"- Saved Plant Disease Vision Scan: '{latest_disease.predicted_label}' "
+            f"(confidence {latest_disease.confidence * 100:.1f}%, status: {certainty_tag}, "
+            f"file: {latest_disease.image_filename}, model: {latest_disease.model_version})"
+        )
+
+    # Read latest saved Weather & Irrigation advisory
+    irrig_stmt = (
+        select(IrrigationRecommendation)
+        .where(IrrigationRecommendation.user_id == user.id)
+        .order_by(IrrigationRecommendation.created_at.desc())
+        .limit(1)
+    )
+    if session.farm_id is not None:
+        farm_irrig = db.scalar(
+            select(IrrigationRecommendation)
+            .where(
+                IrrigationRecommendation.user_id == user.id,
+                IrrigationRecommendation.farm_id == session.farm_id,
+            )
+            .order_by(IrrigationRecommendation.created_at.desc())
+            .limit(1)
+        )
+        latest_irrig = farm_irrig or db.scalar(irrig_stmt)
+    else:
+        latest_irrig = db.scalar(irrig_stmt)
+
+    if latest_irrig is not None:
+        ml_lines.append(
+            f"- Saved Irrigation Advisory: {latest_irrig.location_name} ({latest_irrig.crop_type}, "
+            f"stage {latest_irrig.growth_stage}) -> {latest_irrig.recommended_water_mm:.1f} mm/7d "
+            f"urgency='{latest_irrig.irrigation_urgency}', 7d rain {latest_irrig.forecast_rainfall_7d_mm:.1f} mm, "
+            f"ET0 {latest_irrig.estimated_et0_mm:.1f} mm ({latest_irrig.weather_provider}, forecast/ET0 estimates only)"
+        )
+
+    # Check live ML artifact readiness transparently (missing artifact never breaks chat)
     try:
         registry_notes = []
         for fn in (
             get_crop_yield_registry_status,
+            get_disease_registry_status,
             get_crop_rec_registry_status,
             get_fertilizer_registry_status,
         ):
@@ -421,7 +487,7 @@ def send_message(
     settings = get_settings()
     if len(payload.content) > settings.CHAT_MAX_MESSAGE_CHARS:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Message exceeds maximum allowed length of {settings.CHAT_MAX_MESSAGE_CHARS} characters.",
         )
 

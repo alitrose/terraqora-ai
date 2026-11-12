@@ -1,6 +1,6 @@
-# TerraQora AI — FastAPI Backend (Phases 4–6)
+# TerraQora AI — FastAPI Backend (Phases 4–7)
 
-Modular FastAPI backend built on SQLAlchemy 2.0, Alembic migrations, PostgreSQL (with SQLite local dev/test support), Pydantic v2 validation, bcrypt password hashing, JWT authentication, Farmer/Admin RBAC, live Phase 5 leak-free Crop Yield ML inference, Phase 5B Crop & Fertilizer Recommendation ML inference, and Phase 6 Multilingual Gemini GenAI Assistant (`ai/` + `/api/v1/chat`).
+Modular FastAPI backend built on SQLAlchemy 2.0, Alembic migrations, PostgreSQL (with SQLite local dev/test support), Pydantic v2 validation, bcrypt password hashing, JWT authentication, Farmer/Admin RBAC, Phase 5 leak-free Crop Yield ML inference, Phase 5B Crop & Fertilizer Recommendation ML inference, Phase 6 Multilingual Gemini GenAI Assistant (`ai/` + `/api/v1/chat`), Phase 7 Plant Disease Vision inference (`/api/v1/disease/*`), and Phase 7 Live Weather & Irrigation Intelligence (`/api/v1/weather/*`).
 
 ---
 
@@ -27,10 +27,12 @@ backend/
     │       ├── farms.py            # /farms CRUD (GET list, POST, GET/{id}, PUT/{id}, PATCH/{id}, DELETE/{id})
     │       ├── predictions.py      # Phase 5: POST /predictions/yield & GET /predictions/yield/history
     │       ├── recommendations.py  # Phase 5B: /recommendations/crop (+ /history) & /recommendations/fertilizer (+ /history)
+    │       ├── disease.py          # Phase 7: POST /disease/detect & GET /disease/history
+    │       ├── weather.py          # Phase 7: POST /weather/irrigation & GET /weather/irrigation/history
     │       ├── chat.py             # Phase 6: /chat/sessions & /chat/sessions/{id}/messages (Gemini + RAG)
-    │       └── admin.py            # /admin/overview (incl. live ML registry), /admin/users, PATCH /admin/users/{id}
+    │       └── admin.py            # /admin/overview (incl. live ML/CV registry), /admin/users, PATCH /admin/users/{id}
     ├── core/
-    │   ├── config.py               # Environment settings, LLM provider config & production security guardrails
+    │   ├── config.py               # Environment settings, LLM/Weather/Vision config & production security guardrails
     │   ├── logging_config.py
     │   ├── rate_limit.py           # SlowAPI rate limiter
     │   └── security.py             # bcrypt hashing + PyJWT access tokens
@@ -38,12 +40,15 @@ backend/
     │   ├── base.py
     │   └── session.py              # Engine builder (PostgreSQL pool_pre_ping / SQLite FK enforcement)
     ├── models/                     # All 11 Phase 2 SQLAlchemy 2.0 ORM tables
-    ├── schemas/                    # Pydantic v2 schemas (auth, farm, predictions, recommendations, chat, admin)
+    ├── schemas/                    # Pydantic v2 schemas (auth, farm, predictions, recommendations, disease, weather, chat, admin)
     └── services/
         ├── crop_yield_service.py   # Phase 5 Crop Yield ML loader, TreeSHAP drivers & DB persistence
         ├── crop_rec_service.py     # Phase 5B Crop Recommendation ML loader & DB persistence
         ├── fertilizer_service.py   # Phase 5B Fertilizer grade classifier + ICAR guardrails & persistence
-        └── chat_service.py         # Phase 6 GenAI orchestration, RAG + Farm/ML grounding & chat persistence
+        ├── disease_service.py      # Phase 7 Calibrated Plant Disease PyTorch CPU inference & persistence
+        ├── weather_provider.py     # Phase 7 Open-Meteo / OpenWeatherMap adapters + TTL cache
+        ├── weather_service.py      # Phase 7 FAO-56 Kc*ET0 irrigation calculation & conditional persistence
+        └── chat_service.py         # Phase 6/7 GenAI orchestration, RAG + Farm/ML/Vision grounding & chat persistence
 ```
 
 ---
@@ -59,11 +64,13 @@ backend/
    .\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
    ```
 
-2. **Generate all Phase 5 & 5B ML model artifacts** (required once after fresh clone because `*.joblib` binaries are gitignored):
+2. **Generate all Phase 5, 5B & 7 ML/CV model artifacts** (required once after fresh clone because `*.joblib` and `*.pt` binaries are gitignored):
    ```powershell
    .\.venv\Scripts\python.exe -m ml.training.train_crop_yield
    .\.venv\Scripts\python.exe -m ml.training.train_crop_recommendation
    .\.venv\Scripts\python.exe -m ml.training.train_fertilizer
+   .\.venv\Scripts\python.exe -m ml.audit_plant_disease
+   .\.venv\Scripts\python.exe -m ml.training.train_plant_disease
    ```
 
 3. **Configure `.env`** (never commit `.env`):

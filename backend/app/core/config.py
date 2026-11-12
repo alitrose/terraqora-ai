@@ -27,6 +27,7 @@ _PLACEHOLDER_AI_KEYS = {
     "",
     "your-gemini-api-key-here",
     "your-openai-api-key-optional",
+    "your-openweather-api-key-optional",
     "changeme",
     "placeholder",
 }
@@ -71,6 +72,17 @@ class Settings(BaseSettings):
     OPENAI_MODEL: str = "gpt-4o-mini"
     CHAT_MAX_MESSAGE_CHARS: int = 2000
     CHAT_MAX_HISTORY_TURNS: int = 12
+
+    # Weather Intelligence (Phase 7)
+    WEATHER_PROVIDER: Literal["open_meteo", "openweather"] = "open_meteo"
+    OPENWEATHER_API_KEY: str = Field(default="", repr=False)
+    WEATHER_TIMEOUT_SECONDS: float = 10.0
+    WEATHER_CACHE_TTL_SECONDS: int = 900
+    WEATHER_STALE_MAX_AGE_MINUTES: int = 180
+
+    # Plant Disease Vision (Phase 7)
+    DISEASE_CONFIDENCE_THRESHOLD: float = 0.65
+    DISEASE_MIN_MARGIN: float = 0.15
 
     # Rate limits & Upload caps (wired across endpoints)
     MAX_UPLOAD_IMAGE_MB: int = 5
@@ -124,6 +136,13 @@ class Settings(BaseSettings):
     @property
     def resolved_openai_api_key(self) -> str:
         raw = self.OPENAI_API_KEY.strip()
+        if raw.lower() in _PLACEHOLDER_AI_KEYS or raw.lower().startswith("your-"):
+            return ""
+        return raw
+
+    @property
+    def resolved_openweather_api_key(self) -> str:
+        raw = self.OPENWEATHER_API_KEY.strip()
         if raw.lower() in _PLACEHOLDER_AI_KEYS or raw.lower().startswith("your-"):
             return ""
         return raw

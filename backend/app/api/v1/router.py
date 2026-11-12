@@ -2,7 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.api.v1 import admin, auth, chat, farms, predictions, profile, recommendations
+from app.api.v1 import (
+    admin,
+    auth,
+    chat,
+    disease,
+    farms,
+    predictions,
+    profile,
+    recommendations,
+    weather,
+)
 from app.db.session import get_db
 
 api_v1_router = APIRouter()
@@ -31,5 +41,7 @@ api_v1_router.include_router(profile.router)
 api_v1_router.include_router(farms.router)
 api_v1_router.include_router(predictions.router)
 api_v1_router.include_router(recommendations.router)
+api_v1_router.include_router(disease.router)
 api_v1_router.include_router(chat.router)
+api_v1_router.include_router(weather.router)
 api_v1_router.include_router(admin.router)

@@ -172,19 +172,30 @@ export const mlService = {
       () => demoSandbox.getYieldHistory()
     ),
 
-  detectDisease: (file: File, cropHint: string) =>
-    withPhasePendingFallback<DiseaseDetectionResponse>(
+  detectDisease: (file: File, cropHint: string, farmId?: string | null) =>
+    withFallback<DiseaseDetectionResponse>(
       () => {
         const form = new FormData();
         form.append('file', file);
-        form.append('crop_hint', cropHint);
+        if (cropHint.trim()) {
+          form.append('crop_hint', cropHint.trim());
+        }
+        if (farmId) {
+          form.append('farm_id', farmId);
+        }
         return apiRequest<DiseaseDetectionResponse>('/disease/detect', {
           method: 'POST',
           body: form,
-          timeoutMs: 20000,
+          timeoutMs: 25000,
         });
       },
-      () => demoSandbox.detectDisease(file, cropHint)
+      () => demoSandbox.detectDisease(file, cropHint, farmId)
+    ),
+
+  getDiseaseHistory: () =>
+    withFallback<DiseaseDetectionResponse[]>(
+      () => apiRequest<DiseaseDetectionResponse[]>('/disease/history?limit=10'),
+      () => demoSandbox.getDiseaseHistory()
     ),
 
   recommendFertilizer: (payload: FertilizerRequest) =>
@@ -224,14 +235,20 @@ export const mlService = {
 
 export const weatherService = {
   getIrrigationAdvisory: (payload: WeatherIrrigationRequest) =>
-    withPhasePendingFallback<WeatherIrrigationResponse>(
+    withFallback<WeatherIrrigationResponse>(
       () =>
         apiRequest<WeatherIrrigationResponse>('/weather/irrigation', {
           method: 'POST',
           body: JSON.stringify(payload),
-          timeoutMs: 12000,
+          timeoutMs: 14000,
         }),
       () => demoSandbox.getWeatherIrrigation(payload)
+    ),
+
+  getIrrigationHistory: () =>
+    withFallback<WeatherIrrigationResponse[]>(
+      () => apiRequest<WeatherIrrigationResponse[]>('/weather/irrigation/history?limit=10'),
+      () => demoSandbox.getWeatherHistory()
     ),
 };
 

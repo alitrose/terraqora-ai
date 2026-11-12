@@ -30,7 +30,10 @@ joblib>=1.4.2
 # Computer Vision & Deep Learning
 opencv-python-headless>=4.11.0
 pillow>=11.0.0
-tensorflow>=2.20.0
+pyarrow>=18.0.0
+scipy>=1.14.0
+torch>=2.5.0
+torchvision>=0.20.0
 
 # Generative AI
 google-genai>=1.0.0

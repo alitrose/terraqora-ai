@@ -38,6 +38,18 @@ All original datasets remain preserved untouched at their source locations. Copi
   - Does **not** contain soil `pH`, straight MOP (`0-0-60`), or numeric application dosages (`kg/ha`); production inference strictly combines 3-NPK grade classification with ICAR soil sufficiency & pH guardrails and refuses to invent chemical application weights.
 - **Candidate Datasets Audited & Rejected:** `irakozekelly/fertilizer-prediction` (`100k` rows — uniform random noise, MI ≤ `0.014`, 5-fold CV `14.43%`), `Tejasgolhar f2.csv` (`75%` duplicated rows / singleton class), and `AgriNet` (`doi:10.17632/c7tr9j78td.1` — genuine soil lab chemistry without fertilizer labels). See [RECOMMENDATION_ML.md](../../docs/RECOMMENDATION_ML.md).
 
-### PlantVillage Leaf Disease Dataset (Module 2 — Phase 7)
-- **Planned Source:** PlantVillage Dataset (Hughes & Salathé, 2015 — CC0 / Public Domain via TensorFlow Datasets `plant_village` or verified Kaggle/GitHub mirror).
-- **Validation Gate:** Verify class counts, image readability via OpenCV, strict train/validation/test split before augmentation, and record exact confusion matrix + calibration thresholds (`confidence < 0.65` → Uncertain warning).
+### PlantVillage Leaf Disease Dataset (Module 2 — **Acquired & Audited in Phase 7**)
+- **Source Provenance:** Hughes & Salathé (2015), *arXiv:1511.08060*, distributed via verified public-domain HuggingFace dataset `BrandonFors/Plant-Diseases-PlantVillage-Dataset` (`3` Parquet shards totaling `812.61 MB`).
+- **License:** `CC0 1.0` (Public Domain Dedication — zero attribution/royalty restriction).
+- **Local Uncommitted Storage:** `ml/datasets/plantvillage/*.parquet` and leak-free split manifest `ml/datasets/processed/disease_splits.parquet` (explicitly gitignored).
+- **Audit Script & Report:** [audit_plant_disease.py](../audit_plant_disease.py) → [disease_audit.json](../evaluation/disease_audit.json)
+- **Integrity & Class Balance Findings:**
+  - `54,305` valid RGB `JPEG` images (`256×256` px), `0` corrupt/unreadable files, across `38` disease/healthy classes (`14` crop species).
+  - Severe raw class imbalance (`36.23×`): `Potato___healthy` (`152` images) vs `Orange___Haunglongbing_(Citrus_greening)` (`5,507` images) and `Soybean___healthy` (`5,090` images).
+- **Duplicate & Cross-Split Leakage Audit:**
+  - Identified `21` exact SHA-256 duplicates, `31` perceptual 64-bit dHash near-duplicates, `1` cross-class dHash collision, and `7` SHA-256 / `8` dHash images overlapping between upstream `train` and `test` shards.
+  - **Mitigation Applied:** Excluded cross-class collision groups, collapsed near-duplicate dHash clusters, and rebuilt strictly isolated grouped-stratified splits totaling `7,367` deduplicated images (`train=4,539`, `val=1,133`, `test=1,695`; capped at `120/30/45` per class, `99/23/30` for `Potato___healthy`) with verified `0` SHA-256 and `0` dHash overlap across splits.
+- **Documented Crop & Domain Exclusions:**
+  - Covers `14` temperate/horticultural species only (`Apple`, `Blueberry`, `Cherry`, `Corn/Maize`, `Grape`, `Orange/Citrus`, `Peach`, `Bell Pepper`, `Potato`, `Raspberry`, `Soybean`, `Squash`, `Strawberry`, `Tomato`).
+  - Does **not** cover major staple field crops such as **Rice, Wheat, Cotton, Sugarcane, Coconut, Banana, Groundnut, Chickpea, Mustard, Onion, or Mango** — the API/UI strictly abstains on these crops.
+  - See [DISEASE_DETECTION_ML.md](../../docs/DISEASE_DETECTION_ML.md) for benchmark comparisons, calibration (ECE/Brier), and abstention threshold evaluation.

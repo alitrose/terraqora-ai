@@ -19,12 +19,16 @@ pyjwt>=2.10.0
 bcrypt>=4.2.0
 email-validator>=2.2.0
 
-# Machine Learning & Crop Yield Inference
+# Machine Learning & Vision Inference
 numpy>=2.1.0
 pandas>=2.2.3
 scikit-learn>=1.6.1
 xgboost>=2.1.3
 joblib>=1.4.2
+pillow>=11.0.0
+opencv-python-headless>=4.11.0
+torch>=2.5.0
+torchvision>=0.20.0
 
 # Testing
 pytest>=8.3.0

@@ -33,12 +33,17 @@ pnpm-debug.log*
 *.keras
 *.tflite
 *.onnx
+*.pt
+*.pth
+*.parquet
 ml/datasets/plantvillage/
 ml/datasets/processed/
 ml/saved_models/*.pkl
 ml/saved_models/*.keras
 ml/saved_models/*.tflite
 ml/saved_models/*.h5
+ml/saved_models/*.pt
+ml/saved_models/*.pth
 
 # Local Databases, Uploads & Generated Outputs
 *.db

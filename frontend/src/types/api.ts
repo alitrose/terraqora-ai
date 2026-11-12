@@ -108,17 +108,23 @@ export interface DiseaseCandidate {
 
 export interface DiseaseDetectionResponse {
   id: string;
+  farm_id?: string | null;
+  crop_hint?: string | null;
   image_filename: string;
   predicted_label: string;
   crop_name: string;
   disease_name: string;
   is_healthy: boolean;
   confidence: number;
+  top2_margin?: number | null;
   is_uncertain: boolean;
   uncertainty_reason: string | null;
   top_predictions: DiseaseCandidate[];
   treatment_summary: string;
   prevention_notes: string;
+  next_steps?: string[];
+  limitations?: string[];
+  supported_scope_note?: string;
   model_version: string;
   created_at: string;
   source_mode: DataSourceMode;
@@ -210,11 +216,14 @@ export interface CropRecommendationResponse {
 
 export interface WeatherIrrigationRequest {
   farm_id?: string | null;
-  location_name: string;
-  latitude: number;
-  longitude: number;
-  crop_type: string;
-  growth_stage: 'initial' | 'development' | 'mid_season' | 'late_season';
+  location_name?: string;
+  latitude?: number;
+  longitude?: number;
+  crop_type?: string;
+  growth_stage?: 'initial' | 'development' | 'mid_season' | 'late_season' | 'unknown';
+  soil_type?: string | null;
+  irrigation_type?: 'rainfed' | 'drip' | 'sprinkler' | 'canal' | 'borewell' | 'mixed' | null;
+  soil_moisture_pct?: number | null;
 }
 
 export interface DailyForecastPoint {
@@ -223,6 +232,7 @@ export interface DailyForecastPoint {
   temp_min_c: number;
   humidity_pct: number;
   rain_mm: number;
+  precipitation_probability_pct?: number | null;
   et0_mm: number;
 }
 
@@ -234,22 +244,41 @@ export interface WeatherAlert {
 
 export interface WeatherIrrigationResponse {
   id: string;
+  saved_to_history?: boolean;
+  farm_id?: string | null;
   location_name: string;
   latitude: number;
   longitude: number;
-  crop_type: string;
-  growth_stage: string;
+  crop_type?: string | null;
+  growth_stage?: string | null;
+  soil_type?: string | null;
+  irrigation_type?: string | null;
   weather_provider: string;
+  provider_attribution?: string;
+  observation_time?: string;
+  forecast_generated_at?: string;
+  observation_age_minutes?: number;
+  freshness_status?: 'live' | 'cached' | 'delayed';
+  cache_hit?: boolean;
+  units_summary?: Record<string, string>;
   current_temp_c: number;
   current_humidity_pct: number;
   wind_speed_kmh: number;
   weather_condition: string;
   forecast_rainfall_7d_mm: number;
   estimated_et0_mm: number;
-  recommended_water_mm: number;
-  irrigation_urgency: 'low' | 'moderate' | 'high' | 'skip_rain_expected';
+  recommended_water_mm: number | null;
+  schedule_status?: 'computed' | 'insufficient_agronomic_inputs' | 'rainfed_advisory';
+  irrigation_urgency:
+    | 'low'
+    | 'moderate'
+    | 'high'
+    | 'skip_rain_expected'
+    | 'insufficient_data';
   is_sensor_backed: boolean;
   sensor_notice: string;
+  missing_inputs?: string[];
+  assumptions?: string[];
   advisory_notes: string;
   alerts: WeatherAlert[];
   forecast_7d: DailyForecastPoint[];

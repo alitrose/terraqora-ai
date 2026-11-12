@@ -5,7 +5,7 @@ Authentication: `Authorization: Bearer <access_token>` (JWT).
 TypeScript types matching these contracts live in [api.ts](../frontend/src/types/api.ts), PostgreSQL DDL lives in [schema.sql](../database/schema.sql), and Phase 4 FastAPI routes live in [backend/app/api/v1/](../backend/app/api/v1/router.py).
 
 > [!NOTE]
-> Live endpoints currently active: Phase 4 (`/health`, `/auth/*`, `/profile`, `/farms/*`, `/admin/*`), Phase 5 (`/predictions/yield`, `/predictions/yield/history`), and Phase 5b (`/recommendations/crop`, `/recommendations/crop/history`, `/recommendations/fertilizer`, `/recommendations/fertilizer/history`) authenticate, infer, and persist directly against the FastAPI + SQLAlchemy backend. When using Instant UI Preview Sandbox or when the backend is offline (`status = 0`), or when querying unimplemented Phase 6–8 endpoints (`404`/`501`) in `auto` mode, [services.ts](../frontend/src/api/services.ts) falls back cleanly to `demo_preview`. Live validation (`422`), authorization (`401`/`403`), and missing-model (`503`) responses from Phases 5 & 5b endpoints always surface directly to the user rather than falling back silently to preview numbers. Setting `localStorage.tq_api_mode = "live_only"` disables all fallbacks.
+> Live endpoints currently active across Phases 4–7: Phase 4 (`/health`, `/auth/*`, `/profile`, `/farms/*`, `/admin/*`), Phase 5 (`/predictions/yield`, `/predictions/yield/history`), Phase 5b (`/recommendations/crop`, `/recommendations/crop/history`, `/recommendations/fertilizer`, `/recommendations/fertilizer/history`), Phase 6 (`/chat/sessions`, `/chat/sessions/{id}/messages`), and Phase 7 (`/disease/detect`, `/disease/history`, `/weather/irrigation`, `/weather/irrigation/history`). When using Instant UI Preview Sandbox or when the backend is offline (`status = 0`), or when querying Phase 8 endpoints (`/analytics/*`, `/reports/*` -> `404`/`501`) in `auto` mode, [services.ts](../frontend/src/api/services.ts) falls back cleanly to `demo_preview`. Live validation (`413`/`415`/`422`), authorization (`401`/`403`), rate limit (`429`), provider timeout/stale (`502`/`503`/`504`), and missing-model (`503`) responses from live endpoints always surface directly to the user rather than falling back silently. Setting `localStorage.tq_api_mode = "live_only"` disables all fallbacks.
 
 ---
 
@@ -66,11 +66,12 @@ Validation rules:
 - **Response (`CropYieldResponse`)**: `{ id, farm_id?, crop, state, season, crop_year, area_hectares, predicted_yield, yield_unit, estimated_total_production, production_unit, model_name, model_version, feature_drivers[], advisory_note, created_at, source_mode }`
 - Note: `Coconut` yields report `yield_unit = "nuts/hectare"`; all other 54 crops report `"tonnes/hectare"`. `feature_drivers[]` contains per-prediction normalized **Saabas decision-path / TreeSHAP** percentages (`positive` / `negative` / `neutral`). See [CROP_YIELD_ML.md](CROP_YIELD_ML.md).
 
-### 3.2 Plant Disease Detection (CV)
-- `POST /disease/detect` (Bearer, `multipart/form-data`)
-- **Form Fields**: `file` (`image/jpeg`, `image/png`, `image/webp`, `<= 5 MB`), `crop_hint` (optional string)
-- **Response (`DiseaseDetectionResponse`)**: `{ id, image_filename, predicted_label, crop_name, disease_name, is_healthy, confidence, is_uncertain, uncertainty_reason, top_predictions[], treatment_summary, prevention_notes, model_version, created_at, source_mode }`
-- Guardrail: Predictions with `confidence < 0.65` set `is_uncertain: true` and return an actionable photography/expert consultation warning.
+### 3.2 Plant Disease Detection (CV — **Phase 7 Live**)
+- `POST /disease/detect` (Bearer, `multipart/form-data`, rate limit `20/minute`)
+- `GET /disease/history?limit=10` (Bearer — returns current farmer's saved scans newest first)
+- **Form Fields**: `file` (`image/jpeg`, `image/png`, `image/webp`, `<= 5 MB` — verified by MIME header AND true Pillow byte decoding), `crop_hint` (optional string), `farm_id` (optional UUID)
+- **Response (`DiseaseDetectionResponse`)**: `{ id, farm_id?, crop_hint?, image_filename, predicted_label, crop_name, disease_name, is_healthy, confidence, top2_margin?, is_uncertain, uncertainty_reason, top_predictions[], treatment_summary, prevention_notes, next_steps[], limitations[], supported_scope_note, model_version, created_at, source_mode }`
+- **Guardrails**: Temperature-calibrated softmax predictions below `0.65` confidence, with `(p1 - p2) < 0.15` top-2 margin, low-detail/blank frames, or unsupported crop hints (`Rice`, `Wheat`, `Cotton`, `Sugarcane`, `Coconut`) set `is_uncertain: true`, abstain from definitive diagnosis, and return photography/KVK guidance without fabricating pesticide dosages. See [DISEASE_DETECTION_ML.md](DISEASE_DETECTION_ML.md).
 
 ### 3.3 Smart Fertilizer Recommendation (**Phase 5b Live**)
 - `POST /recommendations/fertilizer` (Bearer, rate limit `20/minute`)
@@ -90,12 +91,13 @@ Validation rules:
 
 ---
 
-## 4. Weather & Irrigation Advisory (Phase 7)
+## 4. Weather & Irrigation Advisory (**Phase 7 Live**)
 
-- `POST /weather/irrigation` (Bearer)
-- **Request (`WeatherIrrigationRequest`)**: `{ farm_id?, location_name, latitude, longitude, crop_type, growth_stage }`
-- **Response (`WeatherIrrigationResponse`)**: Includes `current_temp_c`, `current_humidity_pct`, `wind_speed_kmh`, `forecast_rainfall_7d_mm`, `estimated_et0_mm`, `recommended_water_mm`, `irrigation_urgency`, `is_sensor_backed: false`, `sensor_notice`, `alerts[]`, `forecast_7d[]`, `source_mode`.
-- Transparency contract: Backend returns `is_sensor_backed: false` explicitly indicating meteorological estimation rather than physical soil probe hardware.
+- `POST /weather/irrigation` (Bearer, rate limit `60/minute`)
+- `GET /weather/irrigation/history?limit=10` (Bearer — returns saved complete advisories newest first)
+- **Request (`WeatherIrrigationRequest`, `extra="forbid"`)**: `{ farm_id?, location_name?, latitude?, longitude?, crop_type?, growth_stage?, soil_type?, irrigation_type?, soil_moisture_pct? }`
+- **Response (`WeatherIrrigationResponse`)**: Includes `saved_to_history`, `provider_attribution`, `observation_time`, `forecast_generated_at`, `observation_age_minutes`, `freshness_status`, `cache_hit`, `units_summary`, `current_temp_c`, `current_humidity_pct`, `wind_speed_kmh`, `forecast_rainfall_7d_mm`, `estimated_et0_mm`, `recommended_water_mm` (`float | null`), `schedule_status`, `irrigation_urgency`, `is_sensor_backed: false`, `sensor_notice`, `missing_inputs[]`, `assumptions[]`, `advisory_notes`, `alerts[]`, `forecast_7d[]`, `source_mode`.
+- **Transparency & Failure Guardrails**: Live Open-Meteo primary provider (CC BY 4.0) with backend-only optional OpenWeatherMap provider, 15-minute coordinate cache, stale-observation cutoff (`503`), upstream timeout (`504`), rate-limit (`429`), and strict abstention (`recommended_water_mm = null`, `saved_to_history = false`) whenever `crop_type`, `growth_stage`, `soil_type`, or `irrigation_type` is missing. Explicitly returns `is_sensor_backed: false` (never simulates IoT probes). See [WEATHER_IRRIGATION.md](WEATHER_IRRIGATION.md).
 
 ---
 

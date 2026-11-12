@@ -257,11 +257,15 @@ export interface WeatherIrrigationResponse {
   source_mode: DataSourceMode;
 }
 
+export type ChatLanguageChoice = SupportedLanguage | 'auto';
+
 export interface ChatSession {
   id: string;
   title: string;
   language: SupportedLanguage;
   farm_id: string | null;
+  message_count?: number;
+  created_at?: string;
   updated_at: string;
 }
 
@@ -273,12 +277,22 @@ export interface ChatCitation {
 export interface ChatMessage {
   id: string;
   session_id: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   content: string;
   citations: ChatCitation[];
   provider: string | null;
   model_name: string | null;
+  latency_ms?: number | null;
+  detected_language?: SupportedLanguage | null;
   created_at: string;
+}
+
+export interface ChatTurnResult {
+  session?: ChatSession;
+  userMsg: ChatMessage;
+  assistantMsg: ChatMessage;
+  resolvedLanguage?: SupportedLanguage;
+  autoDetected?: boolean;
 }
 
 export interface AnalyticsFilter {

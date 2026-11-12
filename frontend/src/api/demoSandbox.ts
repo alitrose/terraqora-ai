@@ -3,8 +3,10 @@ import type {
   AnalyticsFilter,
   AnalyticsResponse,
   AuthSession,
+  ChatLanguageChoice,
   ChatMessage,
   ChatSession,
+  ChatTurnResult,
   CropRecommendationRequest,
   CropRecommendationResponse,
   CropYieldRequest,
@@ -569,17 +571,49 @@ export const demoSandbox = {
     return [...demoSessions];
   },
 
-  createChatSession(language: SupportedLanguage, title?: string): ChatSession {
+  createChatSession(
+    language: SupportedLanguage,
+    title?: string,
+    farmId?: string | null
+  ): ChatSession {
+    const now = new Date().toISOString();
     const s: ChatSession = {
       id: makeId('chat'),
       title: title || `Consultation (${language.toUpperCase()})`,
       language,
-      farm_id: demoFarms[0]?.id ?? null,
-      updated_at: new Date().toISOString(),
+      farm_id: farmId !== undefined ? farmId : (demoFarms[0]?.id ?? null),
+      message_count: 0,
+      created_at: now,
+      updated_at: now,
     };
     demoSessions = [s, ...demoSessions];
     demoMessages[s.id] = [];
     return s;
+  },
+
+  updateChatSession(
+    sessionId: string,
+    patch: { title?: string; language?: SupportedLanguage; farm_id?: string | null }
+  ): ChatSession {
+    let updated: ChatSession | undefined;
+    demoSessions = demoSessions.map((s) => {
+      if (s.id !== sessionId) return s;
+      updated = {
+        ...s,
+        ...patch,
+        updated_at: new Date().toISOString(),
+      };
+      return updated;
+    });
+    if (!updated) {
+      throw new Error('Chat session not found.');
+    }
+    return { ...updated };
+  },
+
+  deleteChatSession(sessionId: string): void {
+    demoSessions = demoSessions.filter((s) => s.id !== sessionId);
+    delete demoMessages[sessionId];
   },
 
   getChatMessages(sessionId: string): ChatMessage[] {
@@ -588,13 +622,36 @@ export const demoSandbox = {
 
   clearChatMessages(sessionId: string): void {
     demoMessages[sessionId] = [];
+    demoSessions = demoSessions.map((s) =>
+      s.id === sessionId ? { ...s, message_count: 0, updated_at: new Date().toISOString() } : s
+    );
   },
 
   sendChatMessage(
     sessionId: string,
     prompt: string,
-    language: SupportedLanguage
-  ): { userMsg: ChatMessage; assistantMsg: ChatMessage } {
+    language: ChatLanguageChoice
+  ): ChatTurnResult {
+    const existing = demoSessions.find((s) => s.id === sessionId);
+    let resolvedLang: SupportedLanguage =
+      language === 'auto' ? existing?.language || 'en' : language;
+    let autoDetected = false;
+    if (language === 'auto') {
+      if (/[\u0B80-\u0BFF]/.test(prompt)) {
+        resolvedLang = 'ta';
+        autoDetected = true;
+      } else if (/[\u0D00-\u0D7F]/.test(prompt)) {
+        resolvedLang = 'ml';
+        autoDetected = true;
+      } else if (/[\u0900-\u097F]/.test(prompt)) {
+        resolvedLang = 'hi';
+        autoDetected = true;
+      } else if (/[\u0C00-\u0C7F]/.test(prompt)) {
+        resolvedLang = 'te';
+        autoDetected = true;
+      }
+    }
+
     const userMsg: ChatMessage = {
       id: makeId('msg'),
       session_id: sessionId,
@@ -603,35 +660,53 @@ export const demoSandbox = {
       citations: [],
       provider: null,
       model_name: null,
+      latency_ms: null,
       created_at: new Date().toISOString(),
     };
 
     const langGreetings: Record<SupportedLanguage, string> = {
-      en: '[Preview Mode — Live Gemini RAG connects in Phase 6]\n\nBased on TerraQora agronomy baselines:',
-      ta: '[முன்னோட்ட முறை — Phase 6-இல் நேரடி Gemini AI இணைக்கப்படும்]\n\nஉங்கள் கேள்விக்கான பொதுவான வேளாண் ஆலோசனை:',
-      ml: '[പ്രിവ്യൂ മോഡ് — Phase 6-ൽ തത്സമയ Gemini AI ബന്ധിപ്പിക്കും]\n\nനിങ്ങളുടെ ചോദ്യത്തിനുള്ള പ്രാഥമിക കാർഷിക നിർദ്ദേശം:',
-      hi: '[प्रीव्यू मोड — Phase 6 में लाइव Gemini AI जोड़ा जाएगा]\n\nआपके प्रश्न के लिए प्रारंभिक कृषि मार्गदर्शन:',
-      te: '[ప్రివ్యూ మోడ్ — Phase 6లో లైవ్ Gemini AI కనెక్ట్ అవుతుంది]\n\nమీ ప్రశ్నకు ప్రాథమిక వ్యవసాయ సూచన:',
+      en: '[Preview Mode — Demo Sandbox Response]\n\nBased on TerraQora agronomy baselines:',
+      ta: '[முன்னோட்ட முறை — Demo Sandbox பதில்]\n\nஉங்கள் கேள்விக்கான பொதுவான வேளாண் ஆலோசனை:',
+      ml: '[പ്രിവ്യൂ മോഡ് — Demo Sandbox മറുപടി]\n\nനിങ്ങളുടെ ചോദ്യത്തിനുള്ള പ്രാഥമിക കാർഷിക നിർദ്ദേശം:',
+      hi: '[प्रीव्यू मोड — Demo Sandbox उत्तर]\n\nआपके प्रश्न के लिए प्रारंभिक कृषि मार्गदर्शन:',
+      te: '[ప్రివ్యూ మోడ్ — Demo Sandbox సమాధానం]\n\nమీ ప్రశ్నకు ప్రాథమిక వ్యవసాయ సూచన:',
     };
 
     const assistantMsg: ChatMessage = {
       id: makeId('msg'),
       session_id: sessionId,
       role: 'assistant',
-      content: `${langGreetings[language]} Regarding "${prompt.slice(0, 120)}":\n\n• Inspect soil moisture and drainage before scheduling fertilizer or irrigation operations.\n• Avoid applying unverified chemical dosages — always verify label rates and consult your district Krishi Vigyan Kendra (KVK) agronomist.\n• Use TerraQora's Crop Yield and Weather modules together to benchmark seasonal risk.`,
+      content: `${langGreetings[resolvedLang]} Regarding "${prompt.slice(0, 120)}":\n\n• Inspect soil moisture and drainage before scheduling fertilizer or irrigation operations.\n• Avoid applying unverified chemical dosages — always verify Soil Health Card targets and consult your district Krishi Vigyan Kendra (KVK) agronomist.\n• Use TerraQora's Crop Yield and Weather modules together to benchmark seasonal risk.`,
       citations: [
         { source_title: 'ICAR Nutrient & Irrigation Safety Guidelines', section: 'General Field Advisory' },
       ],
       provider: 'preview_sandbox',
-      model_name: 'gemini-2.5-flash (preview)',
+      model_name: 'preview-demo-stub',
+      latency_ms: 12,
+      detected_language: resolvedLang,
       created_at: new Date().toISOString(),
     };
 
-    demoMessages[sessionId] = [...(demoMessages[sessionId] || []), userMsg, assistantMsg];
-    demoSessions = demoSessions.map((s) =>
-      s.id === sessionId ? { ...s, language, updated_at: new Date().toISOString() } : s
-    );
-    return { userMsg, assistantMsg };
+    const nextThread = [...(demoMessages[sessionId] || []), userMsg, assistantMsg];
+    demoMessages[sessionId] = nextThread;
+    let updatedSession: ChatSession | undefined;
+    demoSessions = demoSessions.map((s) => {
+      if (s.id !== sessionId) return s;
+      updatedSession = {
+        ...s,
+        language: resolvedLang,
+        message_count: nextThread.length,
+        updated_at: new Date().toISOString(),
+      };
+      return updatedSession;
+    });
+    return {
+      session: updatedSession,
+      userMsg,
+      assistantMsg,
+      resolvedLanguage: resolvedLang,
+      autoDetected,
+    };
   },
 
   getAnalytics(filters: AnalyticsFilter): AnalyticsResponse {

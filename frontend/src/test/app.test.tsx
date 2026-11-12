@@ -189,13 +189,16 @@ describe('TerraQora AI — Phase 3 Frontend Suite', () => {
     expect(screen.getByText(/7-Day Rainfall vs\. Max Temperature Forecast/i)).toBeInTheDocument();
   });
 
-  it('supports 5-language GenAI Farming Assistant chat flow and clearing messages', async () => {
+  it('supports 5-language GenAI Farming Assistant chat flow, rename, farm context, and clear/delete', async () => {
     renderAt('/auth');
     const user = await signInAsDemoFarmer();
 
     await user.click(screen.getByRole('link', { name: /GenAI Assistant/i }));
     const langSelect = await screen.findByLabelText(/Assistant Language/i);
     await user.selectOptions(langSelect, 'ta');
+
+    // Linked Farm Plot context control should be available in sidebar
+    expect(screen.getByLabelText(/Linked Farm Plot/i)).toBeInTheDocument();
 
     const chatInput = screen.getByLabelText(/Ask TerraQora AI Advisor/i);
     await user.type(chatInput, 'Paddy leaf tip yellowing guidance?');
@@ -206,6 +209,15 @@ describe('TerraQora AI — Phase 3 Frontend Suite', () => {
     );
     expect(echoedMessages.length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText(/முன்னோட்ட முறை/i)).toBeInTheDocument();
+    expect(screen.getByText(/ICAR Nutrient & Irrigation Safety Guidelines/i)).toBeInTheDocument();
+
+    // Rename session workflow
+    const renameBtn = screen.getByRole('button', { name: /Rename session/i });
+    await user.click(renameBtn);
+    const titleEditInput = screen.getByLabelText(/Edit session title/i);
+    fireEvent.change(titleEditInput, { target: { value: 'Delta Paddy Consult' } });
+    await user.click(screen.getByRole('button', { name: /Save session title/i }));
+    expect(await screen.findAllByText(/Delta Paddy Consult/i)).toHaveLength(2);
 
     await user.click(screen.getByRole('button', { name: /Clear Chat/i }));
     expect(

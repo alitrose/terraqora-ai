@@ -12,6 +12,17 @@ from app.schemas.auth import (
     UserOut,
     UserRole,
 )
+from app.schemas.chat import (
+    ChatCitationOut,
+    ChatLanguageChoice,
+    ChatMessageCreate,
+    ChatMessageOut,
+    ChatMessageRole,
+    ChatSessionCreate,
+    ChatSessionOut,
+    ChatSessionUpdate,
+    ChatTurnResponse,
+)
 from app.schemas.farm import FarmCreate, FarmOut, FarmUpdate, IrrigationType
 from app.schemas.predictions import (
     CropYieldRequest,
@@ -34,6 +45,15 @@ __all__ = [
     "AdminUserItem",
     "AdminUserUpdate",
     "AuthResponse",
+    "ChatCitationOut",
+    "ChatLanguageChoice",
+    "ChatMessageCreate",
+    "ChatMessageOut",
+    "ChatMessageRole",
+    "ChatSessionCreate",
+    "ChatSessionOut",
+    "ChatSessionUpdate",
+    "ChatTurnResponse",
     "CropCandidateOut",
     "CropRecommendationRequest",
     "CropRecommendationResponse",

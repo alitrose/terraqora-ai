@@ -99,15 +99,19 @@ Validation rules:
 
 ---
 
-## 5. GenAI Farming Assistant (Multilingual RAG — Phase 6)
+## 5. GenAI Farming Assistant (Multilingual RAG + Gemini — Phase 6 Live)
 
 | Method | Path | Auth | Request Body | Response |
 | --- | --- | --- | --- | --- |
-| `GET` | `/chat/sessions` | Bearer | — | `ChatSession[]` |
-| `POST` | `/chat/sessions` | Bearer | `{ language, title?, farm_id? }` | `ChatSession` |
-| `GET` | `/chat/sessions/{id}/messages` | Bearer | — | `ChatMessage[]` |
-| `POST` | `/chat/sessions/{id}/messages` | Bearer | `{ content, language }` | `{ user_message, assistant_message }` |
+| `GET` | `/chat/sessions` | Bearer | — | `ChatSessionOut[]` (ordered by `updated_at DESC`, includes `message_count`) |
+| `POST` | `/chat/sessions` | Bearer | `{ language, title?, farm_id? }` | `ChatSessionOut` (`201 Created`) |
+| `PATCH` | `/chat/sessions/{id}` | Bearer | `{ title?, language?, farm_id? }` | `ChatSessionOut` |
+| `DELETE` | `/chat/sessions/{id}` | Bearer | — | `204 No Content` |
+| `GET` | `/chat/sessions/{id}/messages` | Bearer | — | `ChatMessageOut[]` |
+| `POST` | `/chat/sessions/{id}/messages` | Bearer (`20/minute`) | `{ content, language: en\|ta\|ml\|hi\|te\|auto, include_farm_context? }` | `{ session, user_message, assistant_message, resolved_language, language_auto_detected, source_mode }` |
 | `DELETE` | `/chat/sessions/{id}/messages` | Bearer | — | `204 No Content` |
+
+- **Guardrails**: Uses server-side `GEMINI_API_KEY` (`google-genai`), returns explicit `503` when unconfigured, protects against prompt/secret exfiltration, attaches grounded `citations[]`, and distinguishes RAG vs saved Farm/ML records. See [GENAI_ASSISTANT.md](GENAI_ASSISTANT.md).
 
 ---
 

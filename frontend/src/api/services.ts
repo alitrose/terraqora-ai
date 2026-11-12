@@ -5,8 +5,10 @@ import type {
   AnalyticsFilter,
   AnalyticsResponse,
   AuthSession,
+  ChatLanguageChoice,
   ChatMessage,
   ChatSession,
+  ChatTurnResult,
   CropRecommendationRequest,
   CropRecommendationResponse,
   CropYieldRequest,
@@ -235,29 +237,59 @@ export const weatherService = {
 
 export const chatService = {
   listSessions: () =>
-    withPhasePendingFallback<ChatSession[]>(
+    withFallback<ChatSession[]>(
       () => apiRequest<ChatSession[]>('/chat/sessions'),
       () => demoSandbox.getChatSessions()
     ),
 
-  createSession: (language: SupportedLanguage, title?: string) =>
-    withPhasePendingFallback<ChatSession>(
+  createSession: (
+    language: SupportedLanguage,
+    title?: string,
+    farmId?: string | null
+  ) =>
+    withFallback<ChatSession>(
       () =>
         apiRequest<ChatSession>('/chat/sessions', {
           method: 'POST',
-          body: JSON.stringify({ language, title }),
+          body: JSON.stringify({
+            language,
+            ...(title ? { title } : {}),
+            ...(farmId !== undefined ? { farm_id: farmId } : {}),
+          }),
         }),
-      () => demoSandbox.createChatSession(language, title)
+      () => demoSandbox.createChatSession(language, title, farmId)
+    ),
+
+  updateSession: (
+    sessionId: string,
+    patch: { title?: string; language?: SupportedLanguage; farm_id?: string | null }
+  ) =>
+    withFallback<ChatSession>(
+      () =>
+        apiRequest<ChatSession>(`/chat/sessions/${sessionId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(patch),
+        }),
+      () => demoSandbox.updateChatSession(sessionId, patch)
+    ),
+
+  deleteSession: (sessionId: string) =>
+    withFallback<void>(
+      () =>
+        apiRequest<void>(`/chat/sessions/${sessionId}`, {
+          method: 'DELETE',
+        }),
+      () => demoSandbox.deleteChatSession(sessionId)
     ),
 
   getMessages: (sessionId: string) =>
-    withPhasePendingFallback<ChatMessage[]>(
+    withFallback<ChatMessage[]>(
       () => apiRequest<ChatMessage[]>(`/chat/sessions/${sessionId}/messages`),
       () => demoSandbox.getChatMessages(sessionId)
     ),
 
   clearSession: (sessionId: string) =>
-    withPhasePendingFallback<void>(
+    withFallback<void>(
       () =>
         apiRequest<void>(`/chat/sessions/${sessionId}/messages`, {
           method: 'DELETE',
@@ -265,18 +297,36 @@ export const chatService = {
       () => demoSandbox.clearChatMessages(sessionId)
     ),
 
-  sendMessage: (sessionId: string, content: string, language: SupportedLanguage) =>
-    withPhasePendingFallback<{ userMsg: ChatMessage; assistantMsg: ChatMessage }>(
+  sendMessage: (
+    sessionId: string,
+    content: string,
+    language: ChatLanguageChoice,
+    includeFarmContext = true
+  ) =>
+    withFallback<ChatTurnResult>(
       async () => {
         const res = await apiRequest<{
+          session: ChatSession;
           user_message: ChatMessage;
           assistant_message: ChatMessage;
+          resolved_language: SupportedLanguage;
+          language_auto_detected: boolean;
         }>(`/chat/sessions/${sessionId}/messages`, {
           method: 'POST',
-          body: JSON.stringify({ content, language }),
+          body: JSON.stringify({
+            content,
+            language,
+            include_farm_context: includeFarmContext,
+          }),
           timeoutMs: 30000,
         });
-        return { userMsg: res.user_message, assistantMsg: res.assistant_message };
+        return {
+          session: res.session,
+          userMsg: res.user_message,
+          assistantMsg: res.assistant_message,
+          resolvedLanguage: res.resolved_language,
+          autoDetected: res.language_auto_detected,
+        };
       },
       () => demoSandbox.sendChatMessage(sessionId, content, language)
     ),

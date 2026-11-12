@@ -23,6 +23,15 @@ def _normalize_database_url(raw_url: str) -> str:
     return url
 
 
+_PLACEHOLDER_AI_KEYS = {
+    "",
+    "your-gemini-api-key-here",
+    "your-openai-api-key-optional",
+    "changeme",
+    "placeholder",
+}
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=(str(_ROOT_ENV), ".env"),
@@ -52,6 +61,16 @@ class Settings(BaseSettings):
 
     # CORS
     CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
+
+    # Generative AI Providers (read exclusively from env, never exposed to frontend)
+    LLM_PROVIDER: Literal["gemini", "openai"] = "gemini"
+    GEMINI_API_KEY: str = Field(default="", repr=False)
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+    GEMINI_TIMEOUT_SECONDS: float = 20.0
+    OPENAI_API_KEY: str = Field(default="", repr=False)
+    OPENAI_MODEL: str = "gpt-4o-mini"
+    CHAT_MAX_MESSAGE_CHARS: int = 2000
+    CHAT_MAX_HISTORY_TURNS: int = 12
 
     # Rate limits & Upload caps (wired across endpoints)
     MAX_UPLOAD_IMAGE_MB: int = 5
@@ -94,6 +113,28 @@ class Settings(BaseSettings):
     @property
     def is_sqlite(self) -> bool:
         return self.DATABASE_URL.startswith("sqlite")
+
+    @property
+    def resolved_gemini_api_key(self) -> str:
+        raw = self.GEMINI_API_KEY.strip()
+        if raw.lower() in _PLACEHOLDER_AI_KEYS or raw.lower().startswith("your-"):
+            return ""
+        return raw
+
+    @property
+    def resolved_openai_api_key(self) -> str:
+        raw = self.OPENAI_API_KEY.strip()
+        if raw.lower() in _PLACEHOLDER_AI_KEYS or raw.lower().startswith("your-"):
+            return ""
+        return raw
+
+    @property
+    def is_llm_configured(self) -> bool:
+        if self.LLM_PROVIDER == "gemini":
+            return bool(self.resolved_gemini_api_key)
+        if self.LLM_PROVIDER == "openai":
+            return bool(self.resolved_openai_api_key)
+        return False
 
 
 @lru_cache

@@ -1,6 +1,6 @@
-# TerraQora AI — FastAPI Backend (Phases 4–5B)
+# TerraQora AI — FastAPI Backend (Phases 4–6)
 
-Modular FastAPI backend built on SQLAlchemy 2.0, Alembic migrations, PostgreSQL (with SQLite local dev/test support), Pydantic v2 validation, bcrypt password hashing, JWT authentication, Farmer/Admin RBAC, live Phase 5 leak-free Crop Yield ML inference, and Phase 5B Crop & Fertilizer Recommendation ML inference.
+Modular FastAPI backend built on SQLAlchemy 2.0, Alembic migrations, PostgreSQL (with SQLite local dev/test support), Pydantic v2 validation, bcrypt password hashing, JWT authentication, Farmer/Admin RBAC, live Phase 5 leak-free Crop Yield ML inference, Phase 5B Crop & Fertilizer Recommendation ML inference, and Phase 6 Multilingual Gemini GenAI Assistant (`ai/` + `/api/v1/chat`).
 
 ---
 
@@ -27,9 +27,10 @@ backend/
     │       ├── farms.py            # /farms CRUD (GET list, POST, GET/{id}, PUT/{id}, PATCH/{id}, DELETE/{id})
     │       ├── predictions.py      # Phase 5: POST /predictions/yield & GET /predictions/yield/history
     │       ├── recommendations.py  # Phase 5B: /recommendations/crop (+ /history) & /recommendations/fertilizer (+ /history)
+    │       ├── chat.py             # Phase 6: /chat/sessions & /chat/sessions/{id}/messages (Gemini + RAG)
     │       └── admin.py            # /admin/overview (incl. live ML registry), /admin/users, PATCH /admin/users/{id}
     ├── core/
-    │   ├── config.py               # Environment settings & production security guardrails
+    │   ├── config.py               # Environment settings, LLM provider config & production security guardrails
     │   ├── logging_config.py
     │   ├── rate_limit.py           # SlowAPI rate limiter
     │   └── security.py             # bcrypt hashing + PyJWT access tokens
@@ -37,11 +38,12 @@ backend/
     │   ├── base.py
     │   └── session.py              # Engine builder (PostgreSQL pool_pre_ping / SQLite FK enforcement)
     ├── models/                     # All 11 Phase 2 SQLAlchemy 2.0 ORM tables
-    ├── schemas/                    # Pydantic v2 schemas (auth, farm, predictions, recommendations, admin)
+    ├── schemas/                    # Pydantic v2 schemas (auth, farm, predictions, recommendations, chat, admin)
     └── services/
         ├── crop_yield_service.py   # Phase 5 Crop Yield ML loader, TreeSHAP drivers & DB persistence
         ├── crop_rec_service.py     # Phase 5B Crop Recommendation ML loader & DB persistence
-        └── fertilizer_service.py   # Phase 5B Fertilizer grade classifier + ICAR guardrails & persistence
+        ├── fertilizer_service.py   # Phase 5B Fertilizer grade classifier + ICAR guardrails & persistence
+        └── chat_service.py         # Phase 6 GenAI orchestration, RAG + Farm/ML grounding & chat persistence
 ```
 
 ---

@@ -2,14 +2,18 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   BookOpen,
   Bot,
+  Check,
   Globe2,
+  MapPin,
   MessageSquarePlus,
+  Pencil,
   Send,
   ShieldAlert,
   Sparkles,
   Trash2,
+  X,
 } from 'lucide-react';
-import { chatService } from '../api/services';
+import { chatService, profileService } from '../api/services';
 import { AppShell } from '../components/AppShell';
 import {
   EmptyState,
@@ -20,7 +24,15 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { LANGUAGE_OPTIONS } from '../data/agriCatalog';
-import type { ChatMessage, ChatSession, SupportedLanguage } from '../types/api';
+import type {
+  ChatLanguageChoice,
+  ChatMessage,
+  ChatSession,
+  Farm,
+  SupportedLanguage,
+} from '../types/api';
+
+const MAX_PROMPT_CHARS = 2000;
 
 const SUGGESTED_PROMPTS = [
   'How should I split Urea nitrogen top-dressing for Kharif Rice?',
@@ -29,17 +41,29 @@ const SUGGESTED_PROMPTS = [
   'How do I correct acidic red loamy soil (pH 5.3) before sowing?',
 ];
 
+function formatMessageTime(isoDate: string): string {
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 export function GenAIAssistantPage() {
   const { user, isDemoSession } = useAuth();
   const { notify } = useToast();
 
   const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [farms, setFarms] = useState<Farm[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [language, setLanguage] = useState<SupportedLanguage>(
+  const [language, setLanguage] = useState<ChatLanguageChoice>(
     user?.preferred_language || 'en'
   );
+  const [includeFarmContext, setIncludeFarmContext] = useState(true);
   const [input, setInput] = useState('');
+  const [failedPrompt, setFailedPrompt] = useState<string | null>(null);
+
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
 
   const [loadingInit, setLoadingInit] = useState(true);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
@@ -48,13 +72,26 @@ export function GenAIAssistantPage() {
 
   const threadEndRef = useRef<HTMLDivElement | null>(null);
 
-  const loadSessionsAndMessages = async () => {
+  const resolvedSessionLanguage: SupportedLanguage =
+    language === 'auto' ? user?.preferred_language || 'en' : language;
+
+  const loadWorkspace = async () => {
     setLoadingInit(true);
     setError(null);
     try {
-      let list = await chatService.listSessions();
+      const [sessionList, farmList] = await Promise.all([
+        chatService.listSessions(),
+        profileService.listFarms().catch(() => [] as Farm[]),
+      ]);
+      setFarms(farmList);
+
+      let list = sessionList;
       if (list.length === 0) {
-        const created = await chatService.createSession(language, 'New Agronomy Consultation');
+        const created = await chatService.createSession(
+          resolvedSessionLanguage,
+          'New Agronomy Consultation',
+          farmList[0]?.id ?? null
+        );
         list = [created];
       }
       setSessions(list);
@@ -71,7 +108,7 @@ export function GenAIAssistantPage() {
   };
 
   useEffect(() => {
-    loadSessionsAndMessages();
+    loadWorkspace();
   }, []);
 
   useEffect(() => {
@@ -80,8 +117,11 @@ export function GenAIAssistantPage() {
 
   const handleSelectSession = async (session: ChatSession) => {
     setActiveSessionId(session.id);
-    setLanguage(session.language);
+    if (language !== 'auto') {
+      setLanguage(session.language);
+    }
     setError(null);
+    setFailedPrompt(null);
     setLoadingMsgs(true);
     try {
       const msgs = await chatService.getMessages(session.id);
@@ -95,10 +135,14 @@ export function GenAIAssistantPage() {
 
   const handleNewSession = async () => {
     setError(null);
+    setFailedPrompt(null);
+    const targetLang = resolvedSessionLanguage;
     try {
+      const activeFarmId = activeSession?.farm_id ?? farms[0]?.id ?? null;
       const created = await chatService.createSession(
-        language,
-        `Consultation (${language.toUpperCase()})`
+        targetLang,
+        `Consultation (${targetLang.toUpperCase()})`,
+        activeFarmId
       );
       setSessions((prev) => [created, ...prev]);
       setActiveSessionId(created.id);
@@ -109,12 +153,86 @@ export function GenAIAssistantPage() {
     }
   };
 
-  const handleClearChat = async () => {
+  const handleStartRename = (sess: ChatSession) => {
+    setEditingSessionId(sess.id);
+    setEditingTitle(sess.title);
+  };
+
+  const handleSaveRename = async (sessionId: string) => {
+    const trimmed = editingTitle.trim();
+    if (!trimmed) {
+      setError('Session title cannot be blank.');
+      return;
+    }
+    setError(null);
+    try {
+      const updated = await chatService.updateSession(sessionId, { title: trimmed });
+      setSessions((prev) => prev.map((s) => (s.id === sessionId ? updated : s)));
+      setEditingSessionId(null);
+      notify('Renamed consultation session', 'success');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not rename session.');
+    }
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    setError(null);
+    try {
+      await chatService.deleteSession(sessionId);
+      const remaining = sessions.filter((s) => s.id !== sessionId);
+      if (remaining.length === 0) {
+        const created = await chatService.createSession(
+          resolvedSessionLanguage,
+          'New Agronomy Consultation',
+          farms[0]?.id ?? null
+        );
+        setSessions([created]);
+        setActiveSessionId(created.id);
+        setMessages([]);
+      } else {
+        setSessions(remaining);
+        if (activeSessionId === sessionId) {
+          const nextActive = remaining[0];
+          setActiveSessionId(nextActive.id);
+          const msgs = await chatService.getMessages(nextActive.id);
+          setMessages(msgs);
+        }
+      }
+      notify('Deleted consultation session', 'info');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not delete session.');
+    }
+  };
+
+  const handleLinkFarm = async (farmId: string) => {
     if (!activeSessionId) return;
     setError(null);
     try {
+      const updated = await chatService.updateSession(activeSessionId, {
+        farm_id: farmId || null,
+      });
+      setSessions((prev) =>
+        prev.map((s) => (s.id === activeSessionId ? updated : s))
+      );
+      notify(
+        farmId ? 'Linked farm plot context to session' : 'Unlinked farm plot from session',
+        'info'
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update linked farm plot.');
+    }
+  };
+
+  const handleClearChat = async () => {
+    if (!activeSessionId) return;
+    setError(null);
+    setFailedPrompt(null);
+    try {
       await chatService.clearSession(activeSessionId);
       setMessages([]);
+      setSessions((prev) =>
+        prev.map((s) => (s.id === activeSessionId ? { ...s, message_count: 0 } : s))
+      );
       notify('Cleared conversation history', 'info');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not clear messages.');
@@ -127,31 +245,49 @@ export function GenAIAssistantPage() {
       setError('Please enter a farming question before sending.');
       return;
     }
+    if (trimmed.length > MAX_PROMPT_CHARS) {
+      setError(`Questions must be ${MAX_PROMPT_CHARS} characters or fewer.`);
+      return;
+    }
     if (!activeSessionId || sending) return;
 
     setError(null);
+    setFailedPrompt(null);
     setSending(true);
     setInput('');
     try {
-      const { userMsg, assistantMsg } = await chatService.sendMessage(
+      const result = await chatService.sendMessage(
         activeSessionId,
         trimmed,
-        language
+        language,
+        includeFarmContext
       );
-      setMessages((prev) => [...prev, userMsg, assistantMsg]);
+      setMessages((prev) => [...prev, result.userMsg, result.assistantMsg]);
       setSessions((prev) =>
-        prev.map((s) =>
-          s.id === activeSessionId
-            ? { ...s, language, updated_at: new Date().toISOString() }
-            : s
-        )
+        prev.map((s) => {
+          if (s.id !== activeSessionId) return s;
+          return (
+            result.session ?? {
+              ...s,
+              language: result.resolvedLanguage || s.language,
+              updated_at: new Date().toISOString(),
+            }
+          );
+        })
       );
+      if (result.autoDetected && result.resolvedLanguage) {
+        const matched = LANGUAGE_OPTIONS.find((l) => l.code === result.resolvedLanguage);
+        if (matched) {
+          notify(`Auto-detected ${matched.label} script`, 'info');
+        }
+      }
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
           : 'Assistant could not respond right now. Please retry.'
       );
+      setFailedPrompt(trimmed);
       setInput(trimmed);
     } finally {
       setSending(false);
@@ -165,15 +301,25 @@ export function GenAIAssistantPage() {
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) || null;
   const activeSourceMode = isDemoSession ? 'demo_preview' : 'live_api';
+  const linkedFarm = farms.find((f) => f.id === activeSession?.farm_id) || null;
 
   return (
     <AppShell
       title="GenAI Farming Assistant"
-      subtitle="Grounded multilingual agronomy guidance across English, Tamil, Malayalam, Hindi, and Telugu."
+      subtitle="Grounded multilingual agronomy guidance powered by Gemini + TerraQora RAG across English, Tamil, Malayalam, Hindi, and Telugu."
     >
       {error && (
         <div className="mb-4">
-          <ErrorAlert message={error} onRetry={loadingInit ? loadSessionsAndMessages : undefined} />
+          <ErrorAlert
+            message={error}
+            onRetry={
+              loadingInit
+                ? loadWorkspace
+                : failedPrompt
+                  ? () => submitPrompt(failedPrompt)
+                  : undefined
+            }
+          />
         </div>
       )}
 
@@ -203,63 +349,166 @@ export function GenAIAssistantPage() {
               Conversation History ({sessions.length})
             </p>
 
-            <div className="mt-2.5 space-y-2 overflow-y-auto max-h-[420px]">
+            <div className="mt-2.5 space-y-2 overflow-y-auto max-h-[380px]">
               {sessions.map((sess) => {
                 const isActive = sess.id === activeSessionId;
+                const isEditing = editingSessionId === sess.id;
                 return (
-                  <button
+                  <div
                     key={sess.id}
-                    type="button"
-                    onClick={() => handleSelectSession(sess)}
-                    className={`w-full rounded-xl border p-3 text-left transition-colors ${
+                    className={`rounded-xl border p-3 transition-colors ${
                       isActive
                         ? 'border-emerald-border bg-emerald-mist/70'
                         : 'border-soil-border bg-parchment/50 hover:bg-parchment'
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-semibold text-forest-deep">
-                        {sess.title}
-                      </span>
-                      <span className="shrink-0 rounded-md bg-white px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-emerald-leaf border border-soil-border">
-                        {sess.language}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-[11px] text-soil-muted">
-                      Updated {new Date(sess.updated_at).toLocaleDateString()}
-                    </p>
-                  </button>
+                    {isEditing ? (
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="text"
+                          aria-label="Edit session title"
+                          value={editingTitle}
+                          maxLength={160}
+                          onChange={(e) => setEditingTitle(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveRename(sess.id);
+                            if (e.key === 'Escape') setEditingSessionId(null);
+                          }}
+                          className="min-w-0 flex-1 rounded-lg border border-emerald-border bg-white px-2 py-1 text-xs font-medium text-forest-deep focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          aria-label="Save session title"
+                          onClick={() => handleSaveRename(sess.id)}
+                          className="rounded-lg bg-forest-deep p-1 text-white hover:bg-forest-hover"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Cancel rename"
+                          onClick={() => setEditingSessionId(null)}
+                          className="rounded-lg border border-soil-border bg-white p-1 text-soil-muted hover:text-soil-charcoal"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-start justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleSelectSession(sess)}
+                          className="min-w-0 flex-1 text-left"
+                        >
+                          <span className="block truncate text-sm font-semibold text-forest-deep">
+                            {sess.title}
+                          </span>
+                          <span className="mt-1 block text-[11px] text-soil-muted">
+                            Updated {new Date(sess.updated_at).toLocaleDateString()}
+                            {typeof sess.message_count === 'number'
+                              ? ` · ${sess.message_count} msgs`
+                              : ''}
+                          </span>
+                        </button>
+                        <div className="flex shrink-0 items-center gap-1">
+                          <span className="rounded-md border border-soil-border bg-white px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-emerald-leaf">
+                            {sess.language}
+                          </span>
+                          <button
+                            type="button"
+                            aria-label={`Rename session ${sess.title}`}
+                            onClick={() => handleStartRename(sess)}
+                            className="rounded-md p-1 text-soil-muted transition-colors hover:bg-white hover:text-forest-deep"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`Delete session ${sess.title}`}
+                            onClick={() => handleDeleteSession(sess.id)}
+                            className="rounded-md p-1 text-soil-muted transition-colors hover:bg-red-50 hover:text-red-700"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
 
-            <div className="mt-auto pt-4">
+            {/* Grounded Context & Safety Card */}
+            <div className="mt-auto space-y-3 pt-4">
+              {farms.length > 0 && (
+                <div className="rounded-xl border border-soil-border bg-parchment/50 p-3 text-xs">
+                  <label
+                    htmlFor="chat-farm-select"
+                    className="flex items-center gap-1.5 font-bold text-forest-deep"
+                  >
+                    <MapPin className="h-3.5 w-3.5 text-emerald-leaf" />
+                    Linked Farm Plot Context
+                  </label>
+                  <select
+                    id="chat-farm-select"
+                    aria-label="Linked Farm Plot"
+                    value={activeSession?.farm_id || ''}
+                    onChange={(e) => handleLinkFarm(e.target.value)}
+                    className="mt-1.5 w-full rounded-lg border border-soil-border bg-white px-2.5 py-1.5 text-xs text-forest-deep focus:border-emerald-leaf focus:outline-none"
+                  >
+                    <option value="">All Saved Plots (General)</option>
+                    {farms.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.name} — {f.soil_type} ({f.primary_crop || f.district})
+                      </option>
+                    ))}
+                  </select>
+                  <label className="mt-2 flex items-center gap-2 text-[11px] text-soil-muted cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={includeFarmContext}
+                      onChange={(e) => setIncludeFarmContext(e.target.checked)}
+                      className="rounded border-soil-border text-emerald-leaf focus:ring-emerald-leaf"
+                    />
+                    Include saved farm &amp; ML predictions in prompt
+                  </label>
+                </div>
+              )}
+
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">
                 <div className="flex items-center gap-1.5 font-bold">
                   <ShieldAlert className="h-3.5 w-3.5 text-amber-700" />
                   Grounded Guardrail Active
                 </div>
                 <p className="mt-1 leading-relaxed text-[11px]">
-                  Never apply unverified chemical dosages. Verify pesticide rates with your local
-                  Krishi Vigyan Kendra (KVK) agronomist.
+                  Zero invented chemical dosages or text-only disease diagnoses. Always verify
+                  treatment and Soil Health Card targets with your local Krishi Vigyan Kendra (KVK).
                 </p>
               </div>
             </div>
           </aside>
 
           {/* Main Chat Panel */}
-          <section className="flex min-h-[560px] flex-col rounded-2xl border border-soil-border bg-white shadow-card lg:col-span-8">
+          <section className="flex min-h-[580px] flex-col rounded-2xl border border-soil-border bg-white shadow-card lg:col-span-8">
             {/* Chat Header Controls */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-soil-border px-5 py-3.5">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-mist text-forest-deep">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-mist text-forest-deep">
                   <Bot className="h-5 w-5" />
                 </div>
-                <div>
-                  <h2 className="font-display text-sm font-bold text-forest-deep">
+                <div className="min-w-0">
+                  <h2 className="truncate font-display text-sm font-bold text-forest-deep">
                     {activeSession?.title || 'Agronomy Consultation'}
                   </h2>
-                  <SourceModeBadge mode={activeSourceMode} />
+                  <div className="mt-0.5 flex flex-wrap items-center gap-2">
+                    <SourceModeBadge mode={activeSourceMode} />
+                    {linkedFarm && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-parchment px-2 py-0.5 text-[11px] font-medium text-soil-charcoal border border-soil-border">
+                        <MapPin className="h-3 w-3 text-emerald-leaf" />
+                        {linkedFarm.name}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -273,9 +522,10 @@ export function GenAIAssistantPage() {
                     id="chat-language"
                     aria-label="Assistant Language"
                     value={language}
-                    onChange={(e) => setLanguage(e.target.value as SupportedLanguage)}
+                    onChange={(e) => setLanguage(e.target.value as ChatLanguageChoice)}
                     className="bg-transparent text-xs font-semibold text-forest-deep focus:outline-none"
                   >
+                    <option value="auto">Auto-detect Script</option>
                     {LANGUAGE_OPTIONS.map((opt) => (
                       <option key={opt.code} value={opt.code}>
                         {opt.label} ({opt.nativeLabel})
@@ -297,17 +547,18 @@ export function GenAIAssistantPage() {
             </div>
 
             {/* Message Thread */}
-            <div className="flex-1 space-y-4 overflow-y-auto bg-parchment/40 p-5 max-h-[430px]">
+            <div className="flex-1 space-y-4 overflow-y-auto bg-parchment/40 p-5 max-h-[450px]">
               {loadingMsgs ? (
                 <LoadingSkeleton rows={4} />
               ) : messages.length === 0 ? (
                 <EmptyState
                   title="Start a grounded agricultural conversation"
-                  description="Select a suggested prompt below or ask about crop nutrition, leaf disease prevention, seasonal sowing, or weather irrigation timing."
+                  description="Choose your preferred language (or Auto-detect), link a saved farm plot if helpful, and ask about soil nutrition, crop selection, disease prevention, or irrigation."
                 />
               ) : (
                 messages.map((msg) => {
                   const isUser = msg.role === 'user';
+                  const timeLabel = formatMessageTime(msg.created_at);
                   return (
                     <div
                       key={msg.id}
@@ -320,7 +571,7 @@ export function GenAIAssistantPage() {
                             : 'border border-soil-border bg-white text-soil-charcoal'
                         }`}
                       >
-                        <div className="mb-1 flex items-center justify-between gap-4 text-[11px]">
+                        <div className="mb-1 flex flex-wrap items-center justify-between gap-3 text-[11px]">
                           <span
                             className={`font-semibold ${
                               isUser ? 'text-gold-bright' : 'text-emerald-leaf'
@@ -328,11 +579,26 @@ export function GenAIAssistantPage() {
                           >
                             {isUser ? user?.full_name || 'Farmer' : 'TerraQora AI Advisor'}
                           </span>
-                          {!isUser && msg.model_name && (
-                            <span className="font-mono text-[10px] text-soil-muted">
-                              {msg.model_name}
-                            </span>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {!isUser && msg.model_name && (
+                              <span className="font-mono text-[10px] text-soil-muted">
+                                {msg.model_name}
+                                {typeof msg.latency_ms === 'number' && msg.latency_ms > 0
+                                  ? ` · ${msg.latency_ms}ms`
+                                  : ''}
+                              </span>
+                            )}
+                            {timeLabel && (
+                              <time
+                                dateTime={msg.created_at}
+                                className={`text-[10px] tabular-nums ${
+                                  isUser ? 'text-white/75' : 'text-soil-muted'
+                                }`}
+                              >
+                                {timeLabel}
+                              </time>
+                            )}
+                          </div>
                         </div>
 
                         <p className="whitespace-pre-line">{msg.content}</p>
@@ -394,6 +660,7 @@ export function GenAIAssistantPage() {
                 <textarea
                   id="chat-input"
                   rows={2}
+                  maxLength={MAX_PROMPT_CHARS}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -402,19 +669,28 @@ export function GenAIAssistantPage() {
                       submitPrompt(input);
                     }
                   }}
-                  placeholder={`Ask in ${
-                    LANGUAGE_OPTIONS.find((l) => l.code === language)?.label || 'English'
-                  }... (Press Enter to send)`}
+                  placeholder={
+                    language === 'auto'
+                      ? 'Ask in English, தமிழ், മലയാളം, हिन्दी, or తెలుగు... (Auto-detect enabled)'
+                      : `Ask in ${
+                          LANGUAGE_OPTIONS.find((l) => l.code === language)?.label || 'English'
+                        }... (Press Enter to send)`
+                  }
                   className="max-h-32 flex-1 resize-none bg-transparent px-2 py-1 text-sm text-soil-charcoal focus:outline-none"
                 />
-                <button
-                  type="submit"
-                  disabled={sending}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-forest-deep px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-forest-hover disabled:opacity-50"
-                >
-                  <Send className="h-3.5 w-3.5 text-gold-bright" />
-                  Send
-                </button>
+                <div className="flex flex-col items-end gap-1">
+                  <button
+                    type="submit"
+                    disabled={sending}
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-forest-deep px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-forest-hover disabled:opacity-50"
+                  >
+                    <Send className="h-3.5 w-3.5 text-gold-bright" />
+                    Send
+                  </button>
+                  <span className="px-1 text-[10px] tabular-nums text-soil-muted">
+                    {input.length} / {MAX_PROMPT_CHARS}
+                  </span>
+                </div>
               </div>
             </form>
           </section>

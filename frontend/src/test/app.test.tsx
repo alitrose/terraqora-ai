@@ -246,6 +246,9 @@ describe('TerraQora AI — Phase 3 Frontend Suite', () => {
     const user = await signInAsDemoFarmer();
 
     await user.click(screen.getByRole('link', { name: /Agri Analytics/i }));
+    expect(await screen.findByText(/Daily Intelligence Activity Timeline/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: /National Agriculture Benchmarks/i }));
     expect(await screen.findByText(/Feature Correlation Matrix/i)).toBeInTheDocument();
 
     const cropFilter = screen.getByLabelText(/Crop Filter/i);

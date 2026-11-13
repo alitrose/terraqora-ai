@@ -332,6 +332,71 @@ export interface AnalyticsFilter {
   year_end?: number;
 }
 
+export interface ModuleActivitySummary {
+  yield_predictions: number;
+  crop_recommendations: number;
+  fertilizer_recommendations: number;
+  disease_detections: number;
+  irrigation_advisories: number;
+  ai_chat_sessions: number;
+  total_activities: number;
+  active_farms_count: number;
+  total_hectares_managed: number;
+}
+
+export interface DailyActivityPoint {
+  date: string;
+  yield_predictions: number;
+  crop_recommendations: number;
+  fertilizer_recommendations: number;
+  disease_detections: number;
+  irrigation_advisories: number;
+  total: number;
+}
+
+export interface CropActivityBreakdown {
+  crop: string;
+  count: number;
+  avg_yield: number | null;
+  yield_unit: string | null;
+}
+
+export interface DiseaseActivityBreakdown {
+  label: string;
+  crop_name: string;
+  disease_name: string;
+  count: number;
+  uncertain_count: number;
+  avg_confidence: number;
+}
+
+export interface FertilizerActivityBreakdown {
+  recommended_fertilizer: string;
+  count: number;
+}
+
+export interface FarmActivityBreakdown {
+  farm_id: string;
+  farm_name: string;
+  state: string;
+  area_hectares: number;
+  total_activities: number;
+  last_activity: string | null;
+}
+
+export interface UserOperationalAnalyticsResponse {
+  summary: ModuleActivitySummary;
+  filter_range_days: number;
+  filter_farm_id: string | null;
+  filter_farm_name: string | null;
+  timeline: DailyActivityPoint[];
+  top_crops: CropActivityBreakdown[];
+  disease_findings: DiseaseActivityBreakdown[];
+  fertilizer_grades: FertilizerActivityBreakdown[];
+  farm_breakdown: FarmActivityBreakdown[];
+  source_mode: DataSourceMode;
+}
+
 export interface AnalyticsResponse {
   total_records: number;
   unique_crops: number;
@@ -354,9 +419,23 @@ export interface AnalyticsResponse {
   source_mode: DataSourceMode;
 }
 
+export type ReportType =
+  | 'combined_intelligence'
+  | 'crop_yield'
+  | 'crop_recommendation'
+  | 'fertilizer_recommendation'
+  | 'disease_detection'
+  | 'weather_irrigation';
+
 export interface ReportCreateRequest {
   title: string;
+  report_type?: ReportType;
   farm_id?: string | null;
+  crop_prediction_id?: string | null;
+  crop_recommendation_id?: string | null;
+  fertilizer_recommendation_id?: string | null;
+  disease_detection_id?: string | null;
+  irrigation_recommendation_id?: string | null;
   crop: string;
   state: string;
   season: string;
@@ -371,6 +450,9 @@ export interface ReportCreateRequest {
 export interface GeneratedReport {
   id: string;
   title: string;
+  report_type?: string;
+  farm_id?: string | null;
+  farm_name?: string | null;
   crop: string;
   state: string;
   season: string;
@@ -383,6 +465,7 @@ export interface GeneratedReport {
   irrigation_summary: string;
   ai_summary: string;
   pdf_filename: string;
+  download_url?: string;
   created_at: string;
   source_mode: DataSourceMode;
 }
@@ -399,11 +482,31 @@ export interface AdminUserItem {
   created_at: string;
 }
 
+export interface AdminServiceHealthItem {
+  service: string;
+  category: 'database' | 'weather_api' | 'generative_ai' | 'model_artifacts' | 'storage';
+  status: 'Operational' | 'Degraded' | 'Unavailable' | 'Configured' | 'Pending Key';
+  latency_ms?: number | null;
+  details: string;
+}
+
+export interface AdminSystemEventItem {
+  timestamp: string;
+  level: 'INFO' | 'WARNING' | 'ERROR';
+  module: string;
+  message: string;
+}
+
 export interface AdminOverviewResponse {
   total_users: number;
+  active_users?: number;
+  inactive_users?: number;
   active_farms: number;
   total_predictions: number;
+  total_crop_recommendations?: number;
+  total_fertilizer_recommendations?: number;
   total_disease_scans: number;
+  total_irrigation_advisories?: number;
   total_ai_chats: number;
   models: Array<{
     module: string;
@@ -413,6 +516,8 @@ export interface AdminOverviewResponse {
     metric_value: string;
     artifact_size: string;
   }>;
+  services_health?: AdminServiceHealthItem[];
+  recent_events?: AdminSystemEventItem[];
   users: AdminUserItem[];
   source_mode: DataSourceMode;
 }

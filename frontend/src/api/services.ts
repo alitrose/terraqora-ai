@@ -26,6 +26,7 @@ import type {
   ReportCreateRequest,
   SupportedLanguage,
   User,
+  UserOperationalAnalyticsResponse,
   WeatherIrrigationRequest,
   WeatherIrrigationResponse,
 } from '../types/api';
@@ -350,6 +351,19 @@ export const chatService = {
 };
 
 export const analyticsService = {
+  getOperational: (rangeDays: number = 30, farmId?: string) =>
+    withFallback<UserOperationalAnalyticsResponse>(
+      () => {
+        const params = new URLSearchParams();
+        params.set('range_days', String(rangeDays));
+        if (farmId) params.set('farm_id', farmId);
+        return apiRequest<UserOperationalAnalyticsResponse>(
+          `/analytics/operational?${params.toString()}`
+        );
+      },
+      () => demoSandbox.getOperationalAnalytics(rangeDays, farmId)
+    ),
+
   getSummary: (filters: AnalyticsFilter) => {
     const params = new URLSearchParams();
     if (filters.crop) params.set('crop', filters.crop);

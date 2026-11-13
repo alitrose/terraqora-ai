@@ -4,7 +4,7 @@
 
 TerraQora AI is an AI-powered smart agriculture platform combining leak-free Machine Learning, Deep Learning plant pathology vision, real-time meteorological irrigation advisory, agricultural analytics, and grounded multilingual Generative AI.
 
-> **Current Build Phase:** Phase 7 — Plant Disease Vision + Live Weather & Irrigation Intelligence (`dev` branch).
+> **Current Build Phase:** Phase 8 — Operational Analytics, ReportLab PDF Reporting & Full Application Integration (`dev` branch).
 
 ## Architecture Overview
 - **Frontend:** React + TypeScript + Tailwind CSS + Recharts (deployed to Vercel)

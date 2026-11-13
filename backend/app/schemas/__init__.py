@@ -4,6 +4,12 @@ from app.schemas.admin import (
     AdminUserItem,
     AdminUserUpdate,
 )
+from app.schemas.analytics import (
+    DatasetAnalyticsFilter,
+    DatasetAnalyticsResponse,
+    UserOperationalAnalyticsResponse,
+)
+from app.schemas.reports import GeneratedReportResponse, ReportCreateRequest, ReportType
 from app.schemas.auth import (
     AuthResponse,
     LoginRequest,
@@ -67,6 +73,8 @@ __all__ = [
     "CropYieldRequest",
     "CropYieldResponse",
     "DailyForecastPointOut",
+    "DatasetAnalyticsFilter",
+    "DatasetAnalyticsResponse",
     "DiseaseCandidateOut",
     "DiseaseDetectionResponse",
     "FarmCreate",
@@ -77,12 +85,16 @@ __all__ = [
     "FeatureDriverOut",
     "FertilizerRequest",
     "FertilizerResponse",
+    "GeneratedReportResponse",
     "IrrigationType",
     "LoginRequest",
     "NutrientLevelOut",
     "PreferredUnits",
     "RegisterRequest",
+    "ReportCreateRequest",
+    "ReportType",
     "SupportedLanguage",
+    "UserOperationalAnalyticsResponse",
     "UserOut",
     "UserRole",
     "WeatherAlertOut",

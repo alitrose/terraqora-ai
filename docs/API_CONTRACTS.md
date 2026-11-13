@@ -117,17 +117,21 @@ Validation rules:
 
 ---
 
-## 6. Admin Telemetry (Phase 4 Live) & Dataset Analytics / AI Reports (Phases 5–8)
+## 6. Admin Telemetry, Operational Analytics & AI PDF Reports (Phase 8 Live)
 
 | Method | Path | Auth | Notes |
 | --- | --- | --- | --- |
-| `GET` | `/admin/overview` | Bearer (`admin` role) | Returns `403` for non-admin; real DB counts + model registry status (`AdminOverviewResponse`) |
+| `GET` | `/admin/overview` | Bearer (`admin` role) | Returns `403` for non-admin; real DB counts, active/inactive user breakdown, 5-module activity counts, services health matrix, sanitized recent events & model registry status (`AdminOverviewResponse`) |
 | `GET` | `/admin/users` | Bearer (`admin` role) | Platform users directory with `farms_count` and `predictions_count` |
 | `PATCH` | `/admin/users/{user_id}` | Bearer (`admin` role) | Update user `role` or `is_active` (blocks self-deactivation/demotion with `400`) |
-| `GET` | `/analytics/overview` | Bearer (`Phase 5/8`) | Query params: `crop`, `state`, `season`, `year_start`, `year_end` -> `AnalyticsResponse` |
-| `GET` | `/reports` | Bearer (`Phase 6/8`) | Returns `GeneratedReport[]` |
-| `POST` | `/reports` | Bearer (`Phase 6/8`) | `ReportCreateRequest` -> `GeneratedReport` |
-| `GET` | `/reports/{id}/pdf` | Bearer (`Phase 6/8`) | Binary `application/pdf` ReportLab download |
+| `GET` | `/analytics/operational` | Bearer | Real operational telemetry across user's farms & predictions; params: `range_days` (default 30), `farm_id` -> `UserOperationalAnalyticsResponse` |
+| `GET` | `/analytics/dataset` | Bearer | Macro agriculture dataset analytics; params: `crop`, `state`, `season`, `year_start`, `year_end` -> `DatasetAnalyticsResponse` |
+| `GET` | `/analytics/overview` | Bearer | Dual-mode analytics; returns operational or dataset analytics depending on query params |
+| `GET` | `/reports` | Bearer | List generated reports for authenticated farmer -> `GeneratedReport[]` |
+| `POST` | `/reports` | Bearer | Generate publication-quality report across 6 types (`combined_intelligence`, `crop_yield`, `crop_recommendation`, `fertilizer_recommendation`, `disease_detection`, `weather_irrigation`) -> `GeneratedReport` |
+| `GET` | `/reports/{id}` | Bearer (owner/admin) | Get report metadata and analysis payload |
+| `GET` | `/reports/{id}/download` | Bearer (owner/admin) | Binary `application/pdf` ReportLab document download with `Content-Disposition: attachment` |
+| `GET` | `/reports/{id}/pdf` | Bearer (owner/admin) | Binary `application/pdf` ReportLab document stream for inline preview |
 
 ---
 

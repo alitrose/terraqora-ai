@@ -36,3 +36,7 @@ pytest-asyncio>=0.25.0
 
 # Generative AI (Phase 6)
 google-genai>=1.0.0
+
+# Reporting & PDF Generation (Phase 8)
+reportlab>=4.2.5
+

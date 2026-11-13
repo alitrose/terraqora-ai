@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import {
   Activity,
+  AlertCircle,
   Bot,
+  CheckCircle2,
   Cpu,
   MapPin,
   Search,
@@ -58,8 +60,8 @@ export function AdminDashboardPage() {
 
   return (
     <AppShell
-      title="Admin & Model Registry Console"
-      subtitle="Platform usage diagnostics, ML/CV deployment budgets, and registered user directory."
+      title="Admin & System Telemetry Console"
+      subtitle="Platform usage diagnostics, external API health, ML/CV model registry, and scrubbed event audit."
     >
       {error && (
         <div className="mb-6">
@@ -87,35 +89,171 @@ export function AdminDashboardPage() {
             <SourceModeBadge mode={overview.source_mode} />
           </div>
 
-          {/* KPI Strip */}
+          {/* User & Platform KPI Strip */}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               label="Registered Users"
               value={overview.total_users}
-              hint="Active farmer & agronomist accounts"
+              hint={`${overview.active_users ?? overview.total_users} active · ${overview.inactive_users ?? 0} disabled`}
               icon={<Users className="h-5 w-5" />}
             />
             <StatCard
-              label="Active Farm Plots"
+              label="Active Farm Holdings"
               value={overview.active_farms}
-              hint="Verified plot geometries & soil records"
+              hint="Verified geometries & soil profiles"
               accent="emerald"
               icon={<MapPin className="h-5 w-5" />}
             />
             <StatCard
-              label="ML & Vision Runs"
-              value={overview.total_predictions + overview.total_disease_scans}
-              hint={`${overview.total_predictions} tabular · ${overview.total_disease_scans} leaf scans`}
+              label="Tabular ML Forecasts"
+              value={
+                overview.total_predictions +
+                (overview.total_crop_recommendations ?? 0) +
+                (overview.total_fertilizer_recommendations ?? 0)
+              }
+              hint={`${overview.total_predictions} yield · ${overview.total_crop_recommendations ?? 0} crop · ${overview.total_fertilizer_recommendations ?? 0} fert`}
               accent="gold"
               icon={<Activity className="h-5 w-5" />}
             />
             <StatCard
-              label="AI Advisor Turns"
-              value={overview.total_ai_chats}
-              hint="Multilingual Gemini RAG interactions"
+              label="Vision & AI Interactions"
+              value={
+                (overview.total_disease_scans ?? 0) +
+                overview.total_ai_chats +
+                (overview.total_irrigation_advisories ?? 0)
+              }
+              hint={`${overview.total_disease_scans ?? 0} leaf scans · ${overview.total_ai_chats} chat · ${overview.total_irrigation_advisories ?? 0} irrig`}
               icon={<Bot className="h-5 w-5" />}
             />
           </div>
+
+          {/* 5-Module Operational Telemetry Strip */}
+          <div className="rounded-2xl border border-soil-border bg-white p-5 shadow-card">
+            <h2 className="font-display text-sm font-bold text-forest-deep">
+              Agronomic Intelligence Modules Throughput
+            </h2>
+            <p className="text-xs text-soil-muted">
+              Live operational call distribution across all 5 core agritech modules
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              <div className="rounded-xl border border-soil-border bg-parchment/60 p-3.5">
+                <span className="text-[11px] font-semibold text-soil-muted uppercase">
+                  Yield Forecasts
+                </span>
+                <p className="mt-1 font-mono text-lg font-bold text-forest-deep">
+                  {overview.total_predictions}
+                </p>
+                <span className="text-[10px] text-soil-muted">Ridge + RF models</span>
+              </div>
+              <div className="rounded-xl border border-soil-border bg-parchment/60 p-3.5">
+                <span className="text-[11px] font-semibold text-soil-muted uppercase">
+                  Crop Recommendations
+                </span>
+                <p className="mt-1 font-mono text-lg font-bold text-forest-deep">
+                  {overview.total_crop_recommendations ?? 0}
+                </p>
+                <span className="text-[10px] text-soil-muted">22-class Suitability</span>
+              </div>
+              <div className="rounded-xl border border-soil-border bg-parchment/60 p-3.5">
+                <span className="text-[11px] font-semibold text-soil-muted uppercase">
+                  Fertilizer Plans
+                </span>
+                <p className="mt-1 font-mono text-lg font-bold text-forest-deep">
+                  {overview.total_fertilizer_recommendations ?? 0}
+                </p>
+                <span className="text-[10px] text-soil-muted">7-formulation classifier</span>
+              </div>
+              <div className="rounded-xl border border-soil-border bg-parchment/60 p-3.5">
+                <span className="text-[11px] font-semibold text-soil-muted uppercase">
+                  Leaf Pathology Scans
+                </span>
+                <p className="mt-1 font-mono text-lg font-bold text-forest-deep">
+                  {overview.total_disease_scans}
+                </p>
+                <span className="text-[10px] text-soil-muted">MobileNetV3 CV</span>
+              </div>
+              <div className="rounded-xl border border-soil-border bg-parchment/60 p-3.5">
+                <span className="text-[11px] font-semibold text-soil-muted uppercase">
+                  Irrigation Advisories
+                </span>
+                <p className="mt-1 font-mono text-lg font-bold text-forest-deep">
+                  {overview.total_irrigation_advisories ?? 0}
+                </p>
+                <span className="text-[10px] text-soil-muted">Open-Meteo Penman-Monteith</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Service & External API Health Matrix */}
+          {overview.services_health && overview.services_health.length > 0 && (
+            <div className="rounded-2xl border border-soil-border bg-white p-6 shadow-card">
+              <div className="flex items-center gap-2">
+                <Server className="h-5 w-5 text-forest-deep" />
+                <div>
+                  <h2 className="font-display text-base font-bold text-forest-deep">
+                    External API & System Services Health
+                  </h2>
+                  <p className="text-xs text-soil-muted">
+                    Live ping latencies, upstream API connectivity, and on-disk ML artifact integrity
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 overflow-x-auto">
+                <table aria-label="Services Health Matrix" className="w-full min-w-[600px] text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-soil-border uppercase text-soil-muted">
+                      <th className="py-2.5 pr-4 font-semibold">Service</th>
+                      <th className="py-2.5 pr-4 font-semibold">Category</th>
+                      <th className="py-2.5 pr-4 font-semibold">Status</th>
+                      <th className="py-2.5 pr-4 font-semibold">Latency</th>
+                      <th className="py-2.5 font-semibold">Diagnostic Details</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-soil-border">
+                    {overview.services_health.map((sh) => {
+                      const isOk =
+                        sh.status.toLowerCase() === 'operational' ||
+                        sh.status.toLowerCase() === 'healthy';
+                      const isDegraded = sh.status.toLowerCase() === 'degraded';
+                      return (
+                        <tr key={sh.service} className="hover:bg-parchment/40">
+                          <td className="py-3 pr-4 font-semibold text-forest-deep">
+                            {sh.service}
+                          </td>
+                          <td className="py-3 pr-4 font-mono uppercase text-soil-muted">
+                            {sh.category}
+                          </td>
+                          <td className="py-3 pr-4">
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                                isOk
+                                  ? 'bg-emerald-mist text-emerald-800'
+                                  : isDegraded
+                                    ? 'bg-amber-100 text-amber-900'
+                                    : 'bg-red-100 text-red-900'
+                              }`}
+                            >
+                              {isOk ? (
+                                <CheckCircle2 className="h-3 w-3" />
+                              ) : (
+                                <AlertCircle className="h-3 w-3" />
+                              )}
+                              {sh.status}
+                            </span>
+                          </td>
+                          <td className="py-3 pr-4 font-mono">
+                            {sh.latency_ms != null ? `${sh.latency_ms} ms` : '—'}
+                          </td>
+                          <td className="py-3 text-soil-charcoal">{sh.details}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* ML & CV Model Registry */}
           <div className="rounded-2xl border border-soil-border bg-white p-6 shadow-card">
@@ -164,6 +302,49 @@ export function AdminDashboardPage() {
               </table>
             </div>
           </div>
+
+          {/* Recent Scrubbed System Events */}
+          {overview.recent_events && overview.recent_events.length > 0 && (
+            <div className="rounded-2xl border border-soil-border bg-white p-6 shadow-card">
+              <h2 className="font-display text-base font-bold text-forest-deep">
+                Recent Scrubbed System Events
+              </h2>
+              <p className="text-xs text-soil-muted">
+                Sanitized operational trace log (guaranteed zero credential or PII exposure)
+              </p>
+              <div className="mt-4 space-y-2">
+                {overview.recent_events.map((evt, idx) => {
+                  const isErr = evt.level === 'ERROR';
+                  const isWarn = evt.level === 'WARNING';
+                  return (
+                    <div
+                      key={`${evt.timestamp}-${idx}`}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-soil-border bg-parchment/40 px-3.5 py-2 text-xs"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                            isErr
+                              ? 'bg-red-100 text-red-800'
+                              : isWarn
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-emerald-mist text-forest-deep'
+                          }`}
+                        >
+                          {evt.level}
+                        </span>
+                        <span className="font-semibold text-soil-charcoal">{evt.module}</span>
+                        <span className="text-soil-muted">· {evt.message}</span>
+                      </div>
+                      <span className="font-mono text-[11px] text-soil-muted">
+                        {new Date(evt.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* User Directory */}
           <div className="rounded-2xl border border-soil-border bg-white p-6 shadow-card">
@@ -261,7 +442,7 @@ export function AdminDashboardPage() {
                 Configured Backend API Endpoint: <code className="text-forest-deep">{API_BASE_URL}</code>
               </span>
             </div>
-            <span>Database Schema: 11 PostgreSQL Tables Ready · FastAPI Wired in Phase 4</span>
+            <span>Database Schema: 11 PostgreSQL Tables Ready · FastAPI Wired in Phase 4-8</span>
           </div>
         </div>
       )}

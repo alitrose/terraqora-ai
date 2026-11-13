@@ -20,6 +20,7 @@ import type {
   ReportCreateRequest,
   SupportedLanguage,
   User,
+  UserOperationalAnalyticsResponse,
   WeatherIrrigationRequest,
   WeatherIrrigationResponse,
 } from '../types/api';
@@ -886,6 +887,67 @@ export const demoSandbox = {
     };
   },
 
+  getOperationalAnalytics(rangeDays = 30, farmId?: string): UserOperationalAnalyticsResponse {
+    const today = new Date();
+    const timeline = Array.from({ length: Math.min(rangeDays, 14) }, (_, idx) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() - (13 - idx));
+      const dateStr = d.toISOString().slice(0, 10);
+      return {
+        date: dateStr,
+        yield_predictions: idx % 3 === 0 ? 1 : 0,
+        crop_recommendations: idx % 4 === 0 ? 1 : 0,
+        fertilizer_recommendations: idx % 5 === 0 ? 1 : 0,
+        disease_detections: idx % 2 === 0 ? 1 : 0,
+        irrigation_advisories: 1,
+        total: 2 + (idx % 3),
+      };
+    });
+
+    return {
+      summary: {
+        yield_predictions: 12,
+        crop_recommendations: 8,
+        fertilizer_recommendations: 9,
+        disease_detections: 14,
+        irrigation_advisories: 22,
+        ai_chat_sessions: 16,
+        total_activities: 65,
+        active_farms_count: demoFarms.length,
+        total_hectares_managed: demoFarms.reduce((acc, f) => acc + f.area_hectares, 0),
+      },
+      filter_range_days: rangeDays,
+      filter_farm_id: farmId || null,
+      filter_farm_name: farmId ? demoFarms.find((f) => f.id === farmId)?.name || 'Selected Plot' : null,
+      timeline,
+      top_crops: [
+        { crop: 'Rice', count: 6, avg_yield: 3.85, yield_unit: 'tonnes/hectare' },
+        { crop: 'Coconut', count: 3, avg_yield: 8652, yield_unit: 'nuts/hectare' },
+        { crop: 'Tomato', count: 5, avg_yield: 18.2, yield_unit: 'tonnes/hectare' },
+        { crop: 'Maize', count: 2, avg_yield: 4.1, yield_unit: 'tonnes/hectare' },
+      ],
+      disease_findings: [
+        { label: 'Tomato___Early_blight', crop_name: 'Tomato', disease_name: 'Early Blight', count: 6, uncertain_count: 0, avg_confidence: 0.92 },
+        { label: 'Tomato___healthy', crop_name: 'Tomato', disease_name: 'Healthy Foliage', count: 4, uncertain_count: 0, avg_confidence: 0.96 },
+        { label: 'Uncertain___Out_Of_Scope_Crop', crop_name: 'Rice', disease_name: 'Unsupported Crop', count: 2, uncertain_count: 2, avg_confidence: 0.42 },
+      ],
+      fertilizer_grades: [
+        { recommended_fertilizer: 'Urea', count: 4 },
+        { recommended_fertilizer: 'DAP', count: 3 },
+        { recommended_fertilizer: '10-26-26', count: 2 },
+      ],
+      farm_breakdown: demoFarms.map((f, i) => ({
+        farm_id: f.id,
+        farm_name: f.name,
+        state: f.state,
+        area_hectares: f.area_hectares,
+        total_activities: 18 + i * 5,
+        last_activity: new Date(today.getTime() - i * 86400000).toISOString(),
+      })),
+      source_mode: 'demo_preview',
+    };
+  },
+
   getReports(): GeneratedReport[] {
     return [...demoReports];
   },
@@ -921,10 +983,68 @@ export const demoSandbox = {
   getAdminOverview(): AdminOverviewResponse {
     return {
       total_users: 42,
+      active_users: 39,
+      inactive_users: 3,
       active_farms: 68,
       total_predictions: 318,
+      total_crop_recommendations: 175,
+      total_fertilizer_recommendations: 140,
       total_disease_scans: 129,
+      total_irrigation_advisories: 110,
       total_ai_chats: 245,
+      services_health: [
+        {
+          service: 'PostgreSQL / Database Session',
+          category: 'database',
+          status: 'Operational',
+          latency_ms: 4,
+          details: 'Connection pool healthy; all relational schemas verified.',
+        },
+        {
+          service: 'Weather API (Open-Meteo)',
+          category: 'weather_api',
+          status: 'Operational',
+          details: 'CC BY 4.0 telemetry stream active (15-min TTL cache).',
+        },
+        {
+          service: 'Generative AI (Gemini 2.5 Flash)',
+          category: 'generative_ai',
+          status: 'Configured',
+          details: 'Multilingual RAG active across 5 Indian languages.',
+        },
+        {
+          service: 'ML/CV Model Artifacts',
+          category: 'model_artifacts',
+          status: 'Operational',
+          details: 'All 4 verified models loaded on disk.',
+        },
+        {
+          service: 'Local Reports & PDF Storage',
+          category: 'storage',
+          status: 'Operational',
+          details: 'ReportLab PDF engine active; uploads/reports/ writable.',
+        },
+      ],
+      recent_events: [
+        {
+          timestamp: new Date().toISOString(),
+          level: 'INFO',
+          module: 'model_registry',
+          message: 'Model registry status verified: 4 models active (EfficientNet-B0 live).',
+        },
+        {
+          timestamp: new Date(Date.now() - 3600000).toISOString(),
+          level: 'INFO',
+          module: 'weather_cache',
+          message: 'Open-Meteo coordinate cache hit rate 92% across active farm plots.',
+        },
+        {
+          timestamp: new Date(Date.now() - 7200000).toISOString(),
+          level: 'INFO',
+          module: 'auth.register',
+          message: 'New farmer account onboarded (Region: Tamil Nadu, Role: farmer).',
+        },
+      ],
       models: [
         {
           module: 'Crop Yield Prediction',

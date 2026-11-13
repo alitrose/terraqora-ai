@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.api.v1 import (
     admin,
+    analytics,
     auth,
     chat,
     disease,
@@ -11,6 +12,7 @@ from app.api.v1 import (
     predictions,
     profile,
     recommendations,
+    reports,
     weather,
 )
 from app.db.session import get_db
@@ -44,4 +46,6 @@ api_v1_router.include_router(recommendations.router)
 api_v1_router.include_router(disease.router)
 api_v1_router.include_router(chat.router)
 api_v1_router.include_router(weather.router)
+api_v1_router.include_router(analytics.router)
+api_v1_router.include_router(reports.router)
 api_v1_router.include_router(admin.router)

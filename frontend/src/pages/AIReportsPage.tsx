@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import {
+  AlertTriangle,
   CheckCircle2,
   Download,
+  FileSpreadsheet,
   FileText,
+  Layers,
+  Leaf,
   Printer,
   Sparkles,
+  Sprout,
+  SunMedium,
 } from 'lucide-react';
 import { API_BASE_URL, getStoredToken } from '../api/client';
 import { profileService, reportsService } from '../api/services';
@@ -23,7 +29,39 @@ import {
   LANGUAGE_OPTIONS,
   YIELD_CROPS,
 } from '../data/agriCatalog';
-import type { Farm, GeneratedReport, SupportedLanguage } from '../types/api';
+import type {
+  Farm,
+  GeneratedReport,
+  ReportType,
+  SupportedLanguage,
+} from '../types/api';
+
+const REPORT_TYPE_LABELS: Record<ReportType, { label: string; icon: typeof FileText }> = {
+  combined_intelligence: {
+    label: 'Combined Farm Intelligence Audit',
+    icon: Layers,
+  },
+  crop_yield: {
+    label: 'Crop Yield Prediction Report',
+    icon: FileSpreadsheet,
+  },
+  crop_recommendation: {
+    label: 'Crop Suitability & Recommendation',
+    icon: Sprout,
+  },
+  fertilizer_recommendation: {
+    label: 'Fertilizer & Soil Nutrient Plan',
+    icon: Sparkles,
+  },
+  disease_detection: {
+    label: 'Plant Disease Screening Report',
+    icon: Leaf,
+  },
+  weather_irrigation: {
+    label: 'Weather & Irrigation Advisory',
+    icon: SunMedium,
+  },
+};
 
 export function AIReportsPage() {
   const { user, isDemoSession } = useAuth();
@@ -33,6 +71,7 @@ export function AIReportsPage() {
   const [farms, setFarms] = useState<Farm[]>([]);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
 
+  const [reportType, setReportType] = useState<ReportType>('combined_intelligence');
   const [title, setTitle] = useState('Seasonal Acreage & Input Advisory Report');
   const [farmId, setFarmId] = useState('');
   const [crop, setCrop] = useState('Rice');
@@ -52,6 +91,7 @@ export function AIReportsPage() {
 
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadReports = async () => {
@@ -89,6 +129,33 @@ export function AIReportsPage() {
     }
   };
 
+  const handleReportTypeChange = (nextType: ReportType) => {
+    setReportType(nextType);
+    const chosenFarm = farms.find((f) => f.id === farmId);
+    const farmPrefix = chosenFarm ? `${chosenFarm.name} — ` : '';
+    switch (nextType) {
+      case 'crop_yield':
+        setTitle(`${farmPrefix}${crop} Yield Forecast Report`);
+        break;
+      case 'crop_recommendation':
+        setTitle(`${farmPrefix}Crop Suitability & Diversity Assessment`);
+        break;
+      case 'fertilizer_recommendation':
+        setTitle(`${farmPrefix}${crop} Nutrient & Fertilizer Prescription Plan`);
+        break;
+      case 'disease_detection':
+        setTitle(`${farmPrefix}${crop} Leaf Pathology Screening Report`);
+        break;
+      case 'weather_irrigation':
+        setTitle(`${farmPrefix}7-Day Microclimate & Irrigation Advisory`);
+        break;
+      case 'combined_intelligence':
+      default:
+        setTitle(`${farmPrefix}${crop || 'Acreage'} Full Farm Intelligence Audit`);
+        break;
+    }
+  };
+
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -110,6 +177,7 @@ export function AIReportsPage() {
     try {
       const created = await reportsService.create({
         title: title.trim(),
+        report_type: reportType,
         farm_id: farmId || null,
         crop,
         state,
@@ -123,7 +191,7 @@ export function AIReportsPage() {
       });
       setReports((prev) => [created, ...prev]);
       setSelectedReportId(created.id);
-      notify('AI executive report generated', 'success');
+      notify('AI executive report generated with PDF download ready', 'success');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create report.');
     } finally {
@@ -136,28 +204,35 @@ export function AIReportsPage() {
   };
 
   const handleServerPdfDownload = async (report: GeneratedReport) => {
-    if (isDemoSession || report.source_mode === 'demo_preview') {
-      notify(
-        'Server-side ReportLab PDF binary downloads attach in Phase 6. Use Print / Save as PDF right now.',
-        'info'
-      );
-      return;
-    }
+    setDownloading(true);
     const token = getStoredToken();
     try {
-      const res = await fetch(`${API_BASE_URL}/reports/${report.id}/pdf`, {
+      const res = await fetch(`${API_BASE_URL}/reports/${report.id}/download`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      if (!res.ok) throw new Error('PDF download failed');
+      if (!res.ok) {
+        throw new Error(`Download failed with status ${res.status}`);
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = report.pdf_filename || 'TerraQora_Report.pdf';
+      a.download = report.pdf_filename || `TerraQora_Report_${report.id.slice(0, 8)}.pdf`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      notify('Official publication-quality PDF report downloaded', 'success');
     } catch {
-      notify('Could not download PDF binary from server.', 'error');
+      if (isDemoSession || report.source_mode === 'demo_preview') {
+        notify('Demo session: opening browser print export instead.', 'info');
+        window.print();
+      } else {
+        notify('Could not stream PDF from server. Using browser print export instead.', 'info');
+        window.print();
+      }
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -166,8 +241,8 @@ export function AIReportsPage() {
 
   return (
     <AppShell
-      title="AI Farm Reports & Export"
-      subtitle="Compile acreage predictions, nutrient recommendations, and weather advisories into executive PDF reports."
+      title="AI Farm Reports & PDF Export"
+      subtitle="Compile crop forecasts, nutrient prescriptions, and microclimate advisories into executive publication-quality PDF reports."
     >
       {error && (
         <div className="mb-6">
@@ -181,9 +256,33 @@ export function AIReportsPage() {
           onSubmit={handleGenerate}
           className="space-y-4 rounded-2xl border border-soil-border bg-white p-6 shadow-card lg:col-span-5"
         >
-          <h2 className="font-display text-base font-bold text-forest-deep">
-            Build Executive Advisory Report
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-base font-bold text-forest-deep">
+              Report Architect
+            </h2>
+            <span className="rounded-full bg-forest-deep/10 px-2.5 py-0.5 text-[11px] font-bold text-forest-deep">
+              ReportLab Engine
+            </span>
+          </div>
+
+          {/* Report Type Selector */}
+          <div>
+            <label htmlFor="rep-type" className="block text-xs font-semibold text-soil-charcoal">
+              Report Category
+            </label>
+            <select
+              id="rep-type"
+              value={reportType}
+              onChange={(e) => handleReportTypeChange(e.target.value as ReportType)}
+              className="mt-1.5 w-full rounded-xl border border-soil-border bg-parchment/50 px-3 py-2 text-xs font-bold text-forest-deep focus:border-emerald-leaf focus:bg-white focus:outline-none"
+            >
+              {(Object.keys(REPORT_TYPE_LABELS) as ReportType[]).map((t) => (
+                <option key={t} value={t}>
+                  {REPORT_TYPE_LABELS[t].label}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div>
             <label htmlFor="rep-title" className="block text-xs font-semibold text-soil-charcoal">
@@ -355,7 +454,7 @@ export function AIReportsPage() {
             className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-forest-deep py-3 text-sm font-semibold text-white transition-colors hover:bg-forest-hover disabled:opacity-60"
           >
             <Sparkles className="h-4 w-4 text-gold-bright" />
-            {creating ? 'Compiling Report...' : 'Generate AI Report'}
+            {creating ? 'Compiling Report & PDF...' : 'Generate AI Report'}
           </button>
         </form>
 
@@ -374,6 +473,8 @@ export function AIReportsPage() {
               <div className="flex flex-wrap items-center gap-2">
                 {reports.map((rep) => {
                   const active = rep.id === activeReport?.id;
+                  const repTypeKey = (rep.report_type || 'combined_intelligence') as ReportType;
+                  const TypeIcon = REPORT_TYPE_LABELS[repTypeKey]?.icon || FileText;
                   return (
                     <button
                       key={rep.id}
@@ -381,12 +482,12 @@ export function AIReportsPage() {
                       onClick={() => setSelectedReportId(rep.id)}
                       className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${
                         active
-                          ? 'border-forest-deep bg-forest-deep text-white'
+                          ? 'border-forest-deep bg-forest-deep text-white shadow-sm'
                           : 'border-soil-border bg-white text-soil-charcoal hover:bg-parchment'
                       }`}
                     >
-                      <FileText className="h-3.5 w-3.5" />
-                      <span className="max-w-[200px] truncate">{rep.title}</span>
+                      <TypeIcon className="h-3.5 w-3.5" />
+                      <span className="max-w-[180px] truncate">{rep.title}</span>
                     </button>
                   );
                 })}
@@ -396,9 +497,14 @@ export function AIReportsPage() {
                 <article className="space-y-5 rounded-2xl border border-soil-border bg-white p-6 shadow-card">
                   <div className="flex flex-wrap items-start justify-between gap-3 border-b border-soil-border pb-4">
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-leaf">
-                        TerraQora AI · Executive Agronomy Report
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-leaf">
+                          TerraQora AI · Agronomic Intelligence Report
+                        </p>
+                        <span className="rounded-full bg-forest-deep/10 px-2 py-0.5 text-[10px] font-bold text-forest-deep uppercase">
+                          {activeReport.report_type?.replace(/_/g, ' ') || 'Combined Report'}
+                        </span>
+                      </div>
                       <h3 className="mt-1 font-display text-xl font-bold text-forest-deep">
                         {activeReport.title}
                       </h3>
@@ -486,6 +592,18 @@ export function AIReportsPage() {
                     </p>
                   </div>
 
+                  {/* Uncertainty & Safety Callout */}
+                  <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-900">
+                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-700" />
+                    <span>
+                      <strong>Agronomic Decision-Support Notice:</strong> This AI-generated report is
+                      intended for advisory and field planning purposes only. Real-world crop yields
+                      and nutrient uptake are influenced by microclimatic fluctuations, soil compaction,
+                      water salinity, and pest outbreaks. Conduct manual field moisture checks and soil
+                      testing before executing major operational interventions.
+                    </span>
+                  </div>
+
                   {/* Export Action Row */}
                   <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-soil-border pt-4">
                     <button
@@ -498,11 +616,12 @@ export function AIReportsPage() {
                     </button>
                     <button
                       type="button"
+                      disabled={downloading}
                       onClick={() => handleServerPdfDownload(activeReport)}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-forest-deep px-4 py-2 text-xs font-semibold text-white hover:bg-forest-hover"
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-forest-deep px-4 py-2 text-xs font-semibold text-white hover:bg-forest-hover disabled:opacity-60"
                     >
                       <Download className="h-3.5 w-3.5 text-gold-bright" />
-                      Download Server PDF
+                      {downloading ? 'Preparing PDF...' : 'Download Server PDF'}
                     </button>
                   </div>
                 </article>

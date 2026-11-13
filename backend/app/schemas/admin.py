@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime
 from typing import Literal
 import uuid
@@ -13,6 +15,21 @@ class AdminModelStatusItem(BaseModel):
     metric_label: str
     metric_value: str
     artifact_size: str
+
+
+class AdminServiceHealthItem(BaseModel):
+    service: str
+    category: Literal["database", "weather_api", "generative_ai", "model_artifacts", "storage"]
+    status: Literal["Operational", "Degraded", "Unavailable", "Configured", "Pending Key"]
+    latency_ms: int | None = None
+    details: str
+
+
+class AdminSystemEventItem(BaseModel):
+    timestamp: datetime
+    level: Literal["INFO", "WARNING", "ERROR"]
+    module: str
+    message: str
 
 
 class AdminUserItem(BaseModel):
@@ -31,11 +48,18 @@ class AdminUserItem(BaseModel):
 
 class AdminOverviewResponse(BaseModel):
     total_users: int
+    active_users: int = 0
+    inactive_users: int = 0
     active_farms: int
     total_predictions: int
+    total_crop_recommendations: int = 0
+    total_fertilizer_recommendations: int = 0
     total_disease_scans: int
+    total_irrigation_advisories: int = 0
     total_ai_chats: int
     models: list[AdminModelStatusItem]
+    services_health: list[AdminServiceHealthItem] = []
+    recent_events: list[AdminSystemEventItem] = []
     users: list[AdminUserItem]
     source_mode: Literal["live_api"] = "live_api"
 

@@ -1,0 +1,66 @@
+# ============================================================
+# TerraQora AI — Render Infrastructure as Code (IaC) Blueprint
+# ============================================================
+# Defines the production deployment topography for TerraQora AI on Render:
+# 1. FastAPI ASGI Web Service with health check
+# 2. Managed PostgreSQL Database instance
+# ============================================================
+
+services:
+  - type: web
+    name: terraqora-ai-api
+    runtime: python
+    region: oregon
+    plan: free
+    branch: main
+    autoDeploy: false
+    buildCommand: python -m pip install --upgrade pip && pip install -r backend/requirements.txt
+    startCommand: cd backend && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /health
+    envVars:
+      - key: APP_NAME
+        value: TerraQora AI
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: PYTHON_VERSION
+        value: 3.11.8
+      - key: DATABASE_URL
+        fromDatabase:
+          name: terraqora-db
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "60"
+      - key: CORS_ORIGINS
+        value: https://terraqora-ai.vercel.app,http://localhost:5173
+      - key: LLM_PROVIDER
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: WEATHER_PROVIDER
+        value: open_meteo
+      - key: WEATHER_TIMEOUT_SECONDS
+        value: "10"
+      - key: WEATHER_CACHE_TTL_SECONDS
+        value: "900"
+      - key: RATE_LIMIT_DEFAULT
+        value: 60/minute
+      - key: RATE_LIMIT_AI
+        value: 20/minute
+
+databases:
+  - name: terraqora-db
+    databaseName: terraqora_ai
+    user: terra_admin
+    region: oregon
+    plan: free
+    ipAllowList: []

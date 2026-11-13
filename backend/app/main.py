@@ -56,6 +56,19 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(SlowAPIMiddleware)
 
+    @app.middleware("http")
+    async def add_security_headers(request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        if settings.APP_ENV == "production":
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=31536000; includeSubDomains"
+            )
+        return response
+
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(
         _request: Request, exc: RequestValidationError

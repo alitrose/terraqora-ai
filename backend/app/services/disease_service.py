@@ -366,7 +366,7 @@ def get_disease_registry_status() -> AdminModelStatusItem:
 
     algo = str(
         metrics.get("selected_algorithm")
-        or "MobileNetV3-Small Transfer Learning (PyTorch)"
+        or "EfficientNet-B0 Transfer Learning (ImageNet)"
     )
     test_m = metrics.get("selected_test_metrics", {})
 

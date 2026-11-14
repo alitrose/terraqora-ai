@@ -38,7 +38,7 @@
 ### A. Render Free-Tier Web Service (Backend)
 1. **512 MB Memory Budget Limit:**
    - *Constraint:* Render terminates free-tier instances that exceed 512 MB RAM with an Out-Of-Memory (OOM) error.
-   - *Mitigation:* Combined ML models footprint was engineered down to **~23.4 MB** using MobileNetV3-Small (15.7 MB) and Quantile/Naive Bayes estimators (<8 MB). Uvicorn runs with a single worker (`--workers 1`), consuming <140 MB total RSS memory under load.
+   - *Mitigation:* Combined ML models footprint was engineered down to **~23.4 MB** using EfficientNet-B0 (15.7 MB) and Segmented Random Forest / Naive Bayes estimators (<8 MB). Uvicorn runs with a single worker (`--workers 1`), consuming <140 MB total RSS memory under load.
 2. **Cold Starts / Idle Spin-Down:**
    - *Constraint:* Free-tier services spin down after 15 minutes of inactivity. First request takes ~45–60 seconds to resume.
    - *Mitigation:* Frontend displays an animated "Connecting to agricultural intelligence engine..." message rather than timing out.

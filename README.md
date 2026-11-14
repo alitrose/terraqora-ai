@@ -8,7 +8,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688.svg?logo=fastapi)](https://fastapi.tiangolo.com/)
 [![React 19](https://img.shields.io/badge/React-19-61DAFB.svg?logo=react)](https://react.dev/)
 [![TypeScript 5.7](https://img.shields.io/badge/TypeScript-5.7-3178C6.svg?logo=typescript)](https://www.typescriptlang.org/)
-[![PyTorch 2.6](https://img.shields.io/badge/PyTorch-2.6%20MobileNetV3-EE4C2C.svg?logo=pytorch)](https://pytorch.org/)
+[![PyTorch 2.6](https://img.shields.io/badge/PyTorch-2.6%20EfficientNet--B0-EE4C2C.svg?logo=pytorch)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
 [![Branch: dev](https://img.shields.io/badge/Branch-dev-orange.svg)]()
 
@@ -47,16 +47,16 @@ TerraQora AI is architected into 12 tightly integrated functional modules:
 | # | Module | Key Capabilities | Technology / Specs |
 | :--- | :--- | :--- | :--- |
 | **01** | **Identity & Access Management** | Farmer/Admin RBAC, secure passlib bcrypt hashing, HS256 JWT access tokens, token revocation checks | FastAPI Security, PyJWT, SQLAlchemy 2.0 |
-| **02** | **Farmer Profile & Plot Engine** | Multi-plot geospatial management, soil texture tracking, acreage conversion, crop stage tracking | PostgreSQL 16, Geo-coordinate validation |
-| **03** | **Crop Yield Prediction** | Leak-free regression forecasting ($t/ha$), historical trend modeling, regional normalization | Ridge Regression, Scikit-Learn |
-| **04** | **Crop Recommendation** | Precision soil-to-crop matching based on N-P-K, pH, rainfall, temperature, and relative humidity | Random Forest Classifier (99.32% Acc) |
-| **05** | **Fertilizer Recommendation** | Macronutrient deficit calculation with safe chemical and organic application advisories | Decision Tree Classifier + Safe agronomic rules |
-| **06** | **Plant Pathology Vision** | Leaf image classification across 38 pathogen categories with organic and chemical interventions | PyTorch, MobileNetV3-Small (99.37% Acc) |
+| **02** | **Farmer Profile & Plot Engine** | Multi-plot geospatial management, soil texture tracking, acreage conversion, crop stage tracking | PostgreSQL 16 (`farms`, `farmer_profiles`), Geo-coordinate validation |
+| **03** | **Crop Yield Prediction** | Leak-free regression forecasting ($t/ha$ and $nuts/ha$), scale-invariant intensity features | Segmented Random Forest Regressor, Scikit-Learn |
+| **04** | **Crop Recommendation** | Precision soil-to-crop matching based on N-P-K, pH, rainfall, temperature, and relative humidity | Gaussian Naive Bayes (99.55% Acc, 100% Top-3 Acc) |
+| **05** | **Fertilizer Advisory** | Macronutrient deficit matching with 7 commercial formulations and organic sufficiency guardrails | Logistic Regression + ICAR Rules (Zero Fabricated Dosages Policy) |
+| **06** | **Plant Pathology Vision** | Leaf image classification across 38 pathogen categories with temperature calibration | PyTorch, EfficientNet-B0 (95.93% Top-1, 99.59% Top-3 Acc) |
 | **07** | **Live Meteorological Telemetry** | 7-day hourly forecasts, solar radiation, humidity, wind speed, precipitation, ET0 calculation | Open-Meteo CC BY 4.0 API + OpenWeatherMap |
-| **08** | **FAO-56 Irrigation Engine** | Daily crop water requirement ($ET_c = ET_0 \times K_c$), soil water deficit estimation, stress alerts | Penman-Monteith agro-hydrological algorithm |
-| **09** | **GenAI Farming Assistant** | Multilingual conversational agronomy (English, Hindi, Spanish), grounded in user plot context | Gemini 2.5 Flash (`google-genai`), RAG memory |
+| **08** | **FAO-56 Irrigation Engine** | Daily crop water requirement ($ET_c = ET_0 \times K_c$), soil water deficit estimation, stress alerts | Penman-Monteith agro-hydrological algorithm (`irrigation_recommendations`) |
+| **09** | **GenAI Farming Assistant** | Multilingual conversational agronomy (English, Hindi, Spanish), grounded in user plot context | Gemini 2.5 Flash (`google-genai`), RAG memory (`chat_sessions`, `chat_messages`) |
 | **10** | **Operational Analytics** | Historical yield trends, disease incidence tracking, farm resource allocation visualizations | Recharts, Tailwind CSS, Responsive UI |
-| **11** | **Automated PDF Reporting** | 6 downloadable formal agronomic report types with tabular metrics and branding | ReportLab 4.4.10, PyPDF verification |
+| **11** | **Automated PDF Reporting** | 6 downloadable formal agronomic report types with tabular metrics and branding | ReportLab 4.4.10, PyPDF verification (`generated_reports`) |
 | **12** | **System Administration** | User management, audit logs, model performance telemetry, system health monitoring | FastAPI Admin router, Role authorization |
 
 ---
@@ -135,7 +135,7 @@ flowchart TD
 | | Migrations | Alembic 1.15.1 | Declarative schema revision control and repeatable DDL migration |
 | | PDF Engine | ReportLab 4.4.10 | Direct binary PDF document generation with vector canvas control |
 | **Database** | RDBMS | PostgreSQL 16 | ACID-compliant relational storage with relational foreign keys |
-| **Machine Learning**| Vision | PyTorch 2.6.0 + Torchvision | MobileNetV3-Small backbone optimized for CPU inference latency |
+| **Machine Learning**| Vision | PyTorch 2.6.0 + Torchvision | EfficientNet-B0 transfer learning backbone with post-hoc temperature calibration |
 | | Classical ML | Scikit-Learn 1.6.1 + XGBoost | High-precision regression and tree-based classification pipelines |
 | | Serialization | Joblib 1.4.2 | Compact binary model persistence |
 | **Cloud Services** | Meteorological | Open-Meteo REST API | Open access high-resolution numerical weather prediction models |
@@ -149,24 +149,25 @@ All models are engineered to eliminate data leakage and minimize memory footprin
 
 | Model Task | Algorithm Backbone | Primary Evaluation Metrics | Baseline Comparison | Artifact Footprint |
 | :--- | :--- | :--- | :--- | :--- |
-| **Crop Yield Prediction** | Ridge Regression Pipeline (Target: $t/ha$) | **MAE:** 1.097 $t/ha$<br>**RMSE:** 1.848 $t/ha$<br>**$R^2$:** 0.141 *(Unleaked)* | Evaluated against baseline Random Forest and Gradient Boosting | 7.66 MB (`crop_yield_model.joblib`) |
-| **Crop Recommendation** | Stratified Random Forest (22 crops) | **Accuracy:** 99.32%<br>**Macro Precision:** 99.35%<br>**Macro F1:** 99.32% | Outperformed Decision Tree (98.4%) and Multinomial Naive Bayes | 0.005 MB (`crop_recommendation_model.joblib`) |
-| **Fertilizer Advisory** | Cost-Sensitive Decision Tree (7 categories) | **Accuracy:** 100.0% (Benchmark)<br>**Macro F1:** 1.000<br>+ Agronomic fallback rules | Validated against tabular extension baseline with range clipping | 0.002 MB (`fertilizer_model.joblib`) |
-| **Plant Pathology Vision**| Transfer Learning MobileNetV3-Small | **Top-1 Accuracy:** 99.37%<br>**Macro F1:** 99.18%<br>**Inference Latency:** 45 ms (CPU) | Compared to EfficientNet-B0 (99.12%) with 60% lower latency | 15.74 MB (`plant_disease_model.pt`) |
+| **Crop Yield Prediction** | Segmented Random Forest Regressor (Non-Coconut $t/ha$ + Coconut $nuts/ha$) | **Non-Coconut (2,162 test rows):**<br>MAE: 1.408 $t/ha$, RMSE: 6.468 $t/ha$, $R^2$: 0.760<br>**Coconut (17 test rows):**<br>MAE: 1,589.9 $nuts/ha$, $R^2$: 0.707<br>**Overall Held-Out $R^2$:** 0.952 | Outperformed unsegmented Ridge ($R^2 = -12.68$) and unsegmented XGBoost ($R^2 = 0.285$) | 7.66 MB (`crop_yield_model.joblib`) |
+| **Crop Recommendation** | Gaussian Naive Bayes (`7 Physical Features`) | **Accuracy:** 99.55% ($438/440$)<br>**Top-3 Accuracy:** 100.0%<br>**Macro Precision:** 99.59%<br>**Macro F1:** 99.54% | Outperformed Random Forest (99.32%), Decision Tree (98.4%), and Logistic Regression (97.3%) | 0.005 MB (`crop_recommendation_model.joblib`) |
+| **Fertilizer Advisory** | Logistic Regression (`3 NPK Features`) + ICAR Rules | **Accuracy:** 100.0% (Benchmark, $20/20$)<br>**Macro F1:** 1.000<br>+ **Zero Fabricated Dosages Policy** | Formulations matched via 7 commercial grades; kg/ha dosages omitted pending soil lab test | 0.002 MB (`fertilizer_model.joblib`) |
+| **Plant Pathology Vision**| Transfer Learning EfficientNet-B0 (38 Classes) | **Top-1 Accuracy:** 95.93% ($1,626/1,695$)<br>**Top-3 Accuracy:** 99.59% ($1,688/1,695$)<br>**Macro F1:** 95.92%<br>**Calibrated ECE:** 0.0117 | Outperformed MobileNetV3-Small (93.86% Acc, 93.84% F1) and RGB/HSV Baseline (75.46% Acc) | 15.74 MB (`plant_disease_model.pt`) |
 
 ---
 
 ## 7. Plant Pathology Computer Vision Specifications
 
-The plant disease detection pipeline analyzes crop foliage imagery using a fine-tuned `MobileNetV3-Small` deep neural network:
+The plant disease detection pipeline analyzes crop foliage imagery using a fine-tuned `EfficientNet-B0` deep neural network:
 - **Input Dimensions:** RGB $224 \times 224 \times 3$, normalized using ImageNet channel statistics ($\mu = [0.485, 0.456, 0.406]$, $\sigma = [0.229, 0.224, 0.225]$).
 - **Supported Crops (14 Species):** Apple, Blueberry, Cherry, Corn (Maize), Grape, Orange, Peach, Bell Pepper, Potato, Raspberry, Soybean, Squash, Strawberry, and Tomato.
 - **Pathology Coverage (38 Conditions):** Including Apple Scab, Cedar Apple Rust, Corn Common Rust, Grape Black Rot, Potato Early/Late Blight, Tomato Yellow Leaf Curl Virus, and healthy reference baselines.
+- **Confidence Calibration:** Post-hoc temperature scaling ($T = 0.5341$) reduces 10-bin Expected Calibration Error from $0.0943 \to 0.0117$ (87.6% error reduction).
 - **Defensive Safeguards:**
   - Strict image format validation (`JPEG`, `PNG`, `WEBP`).
   - 10 MB payload hard limit preventing buffer overflow.
   - Image dimension sanitization (rejection of truncated or malicious EXIF chunks).
-  - Out-of-distribution (OOD) confidence thresholding ($< 60\%$ flags advisory warning).
+  - Out-of-distribution (OOD) confidence thresholding ($< 65\%$ confidence or $< 15\%$ top-2 margin flags advisory abstention).
 
 ---
 
@@ -217,13 +218,17 @@ Constructed using ReportLab 4.4.10, producing publication-ready agricultural rep
 
 ## 11. Data Governance, Provenance & Licensing Summary
 
-| Resource | Original Source | Legal License | Platform Attribution |
+| Resource | Original Source | Legal License | Platform Attribution & Commercial Terms |
 | :--- | :--- | :--- | :--- |
-| **PlantVillage Dataset** | Penn State / EPFL (Hughes & Salathé, 2015) | Creative Commons Zero (CC0) | Public domain computer vision benchmark |
-| **Crop Recommendation Data** | Open Agricultural Research Benchmark | Open Database License (ODbL) | Standard soil-climate recommendation |
-| **Crop Yield Statistics** | MoA&FW, Govt. of India (1997–2020) | Open Government Data (OGD) | Statistical historical yield distribution |
-| **Open-Meteo Weather API** | Open-Meteo GmbH | CC BY 4.0 International | Weather forecasts & historical reanalysis |
-| **TerraQora Platform Code** | TerraQora AI Repository | MIT License | Full source code & configurations |
+| **PlantVillage Dataset** | Penn State / EPFL (Hughes & Salathé, 2015) | Creative Commons Zero (CC0 1.0) | Public domain dedication; open commercial derivation & model redistribution |
+| **Crop Recommendation Data** | Atharva Ingle, Kaggle Benchmark | CC0 1.0 Universal / Public Domain | Standard soil-climate recommendation benchmark |
+| **Crop Yield Statistics** | MoA&FW, Govt. of India (1997–2020) | Open Government Data (OGD) / Public Domain | Historical statistical census; research & educational platform use |
+| **Fertilizer Benchmark Data** | `gdabhishek/fertilizer-prediction` (Kaggle) | Public Agricultural Benchmark | Formulation classification; commercial terms unspecified upstream |
+| **Open-Meteo Weather API** | Open-Meteo GmbH | CC BY 4.0 International | Free with mandatory attribution; paid commercial plan required for high-volume SLA |
+| **TerraQora Platform Code** | TerraQora AI Codebase | MIT License | Permissive open source software license (see [LICENSE.md](LICENSE.md)) |
+
+> [!NOTE]
+> **Database Table Mapping:** The platform persists operational entities across 11 core PostgreSQL tables: `users`, `farmer_profiles`, `farms` (farm plots), `crop_predictions`, `disease_detections`, `fertilizer_recommendations`, `irrigation_recommendations`, `crop_recommendations`, `chat_sessions`, `chat_messages`, and `generated_reports`.
 
 *Complete legal information and disclaimers are documented in [LICENSE.md](LICENSE.md) and [ml/datasets/DATASETS.md](ml/datasets/DATASETS.md).*
 

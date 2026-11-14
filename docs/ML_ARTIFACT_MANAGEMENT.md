@@ -13,10 +13,10 @@ All 4 machine learning and computer vision models are serialized, versioned, and
 
 | Model Identifier | Architecture / Algorithm | File Name | Size (MB) | SHA-256 Checksum | Runtime Framework |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Crop Yield Prediction** | Random Forest Regressor + Quantile Transformer | `crop_yield_model.joblib` | **7.660 MB** | `0c1a619a2dc01dc6f2957947b8cb418744e68d46434bc3e4a4b7b323ad5d09e0` | `scikit-learn>=1.5.0`, `joblib` |
+| **Crop Yield Prediction** | Segmented Random Forest Regressor (Non-Coconut + Coconut) | `crop_yield_model.joblib` | **7.660 MB** | `0c1a619a2dc01dc6f2957947b8cb418744e68d46434bc3e4a4b7b323ad5d09e0` | `scikit-learn>=1.5.0`, `joblib` |
 | **Crop Recommendation** | Gaussian Naive Bayes Classifier | `crop_recommendation_model.joblib` | **0.005 MB** | `11c950bbaedef1f2916a3728962fdb856c931a65ca24e258e1cabb01bdb5117a` | `scikit-learn>=1.5.0`, `joblib` |
-| **Fertilizer Recommendation**| Multinomial Logistic Regression | `fertilizer_model.joblib` | **0.002 MB** | `4be5fd9c06401acd9041e52c724235a8c43f5da27ba10670b7609e0f7bfbc2e7` | `scikit-learn>=1.5.0`, `joblib` |
-| **Plant Pathology CV** | MobileNetV3-Small Transfer Learning | `plant_disease_model.pt` | **15.744 MB** | `c1fc22bf1bee57067f64504af52e35d4ae9163a55a61fbe854180ae8f0eb1597` | `torch>=2.4.0`, `torchvision>=0.19.0` |
+| **Fertilizer Recommendation**| Logistic Regression (3 NPK Features) + Zero Dosages | `fertilizer_model.joblib` | **0.002 MB** | `4be5fd9c06401acd9041e52c724235a8c43f5da27ba10670b7609e0f7bfbc2e7` | `scikit-learn>=1.5.0`, `joblib` |
+| **Plant Pathology CV** | EfficientNet-B0 Transfer Learning (38 Classes) | `plant_disease_model.pt` | **15.744 MB** | `c1fc22bf1bee57067f64504af52e35d4ae9163a55a61fbe854180ae8f0eb1597` | `torch>=2.4.0`, `torchvision>=0.19.0` |
 
 **Total Combined Model Footprint:** **~23.41 MB**  
 This lightweight footprint easily satisfies Render's 512 MB free-tier RAM limit and avoids out-of-memory (OOM) fatal crashes.
@@ -36,7 +36,7 @@ ml/
 │   ├── train_crop_yield.py          # Trains Yield models (Ridge, DT, RF, XGBoost)
 │   ├── train_crop_recommendation.py # Trains 22-class Crop Recommendation classifier
 │   ├── train_fertilizer.py          # Trains 7-formulation Fertilizer classifier
-│   └── train_plant_disease.py       # Fine-tunes MobileNetV3 on 38 PlantVillage classes
+│   └── train_plant_disease.py       # Fine-tunes EfficientNet-B0 on 38 PlantVillage classes
 └── preprocessing/
     ├── pipeline.py                  # Crop yield feature pipelines
     ├── recommendation_features.py   # Crop & Fertilizer transformers

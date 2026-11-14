@@ -38,6 +38,8 @@ pnpm-debug.log*
 *.parquet
 ml/datasets/plantvillage/
 ml/datasets/processed/
+# Restricted Datasets with Unresolved Commercial Redistribution Terms (Kept local, excluded from public git)
+ml/datasets/raw/Fertilizer_Prediction.csv
 ml/saved_models/*.pkl
 ml/saved_models/*.keras
 ml/saved_models/*.tflite
